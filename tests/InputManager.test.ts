@@ -53,4 +53,28 @@ describe('InputManager', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS' }));
     expect(received).toContain(InputAction.SLIDE);
   });
+
+  it('should dispatch jump immediately even while transitioning lanes', () => {
+    const received: InputAction[] = [];
+    input.setCallback((action) => {
+      received.push(action);
+    });
+
+    // Busy lane transition
+    input.setProcessingTransition(true);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+    expect(received).toContain(InputAction.JUMP);
+  });
+
+  it('should dispatch slide immediately even while transitioning lanes', () => {
+    const received: InputAction[] = [];
+    input.setCallback((action) => {
+      received.push(action);
+    });
+
+    // Busy lane transition
+    input.setProcessingTransition(true);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS' }));
+    expect(received).toContain(InputAction.SLIDE);
+  });
 });

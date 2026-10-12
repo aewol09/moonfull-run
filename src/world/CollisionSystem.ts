@@ -12,32 +12,30 @@ export class CollisionSystem {
   public checkCollisions(
     luna: LunaCharacter,
     obstacles: ObstacleInstance[],
-    dt: number
+    dt: number,
+    currentSpeed = 14.0
   ): CollisionResult {
     const playerX = luna.mesh.position.x;
     const playerY = luna.posY;
     const playerZ = luna.mesh.position.z;
     const isSliding = luna.state === CharacterState.SLIDE;
-    const isAirborne = luna.state === CharacterState.JUMP || luna.state === CharacterState.FALL;
 
-    // Luna collision bounds
-    const playerRadius = 0.45;
-    const playerHeight = isSliding ? 0.75 : 1.6;
+    const playerRadius = 0.42;
 
     for (const obs of obstacles) {
       if (!obs.active || obs.cleared) continue;
 
       const zDist = Math.abs(playerZ - obs.zPos);
 
-      // Early discard if not close in Z
-      if (zDist > Math.max(obs.depth, 4.0)) continue;
+      // Early cull
+      if (zDist > Math.max(obs.depth, 6.0)) continue;
 
-      // 1. Broken Bridge (Gap in the floor)
+      // 1. Broken Bridge (Chasm Gap)
       if (obs.type === ObstacleType.BROKEN_BRIDGE) {
         const halfGap = obs.depth / 2;
         if (playerZ <= obs.zPos + halfGap && playerZ >= obs.zPos - halfGap) {
-          // If player is not jumping high enough over the gap, they fall to their doom
-          if (playerY < 0.25) {
+          // If not jumping high enough over the abyss
+          if (playerY < 0.28) {
             obs.cleared = true;
             return { hit: true, type: ObstacleType.BROKEN_BRIDGE, fatal: true };
           }
@@ -45,15 +43,13 @@ export class CollisionSystem {
         continue;
       }
 
-      // 2. Low Stone Arch
+      // 2. Low Stone Arch (Slide underneath)
       if (obs.type === ObstacleType.LOW_ARCH) {
-        // Clearance under the arch is 1.05m
-        if (Math.abs(playerZ - obs.zPos) < (obs.depth / 2 + 0.3)) {
-          // If sliding, safely pass underneath
+        if (zDist < (obs.depth / 2 + 0.35)) {
           if (isSliding) {
+            // Safely pass underneath
             continue;
           }
-          // If standing or jumping, hit the top beam
           obs.cleared = true;
           return { hit: true, type: ObstacleType.LOW_ARCH, fatal: false };
         }
@@ -65,21 +61,25 @@ export class CollisionSystem {
         const obsX = obs.lane * LANE_WIDTH;
         const xDist = Math.abs(playerX - obsX);
 
-        if (zDist < 8.0 && xDist < obs.width / 2 + 0.5) {
-          // Trigger crumbling shake warning
-          obs.isCrumbling = true;
-          if (obs.crumbleTimer !== undefined) {
-            obs.crumbleTimer -= dt;
-            // Visual shake
-            obs.mesh.position.x = obsX + (Math.random() - 0.5) * 0.12;
+        // Warning time: always gives 0.7s of shaking warning before arrival regardless of speed
+        const warningDist = Math.max(8.0, currentSpeed * 0.7);
 
-            // If timer runs out, platform drops
-            if (obs.crumbleTimer <= 0) {
-              obs.mesh.position.y -= dt * 15;
-              if (zDist < obs.depth / 2 && xDist < obs.width / 2 && playerY < 0.2) {
-                obs.cleared = true;
-                return { hit: true, type: ObstacleType.CRUMBLING_PLATFORM, fatal: true };
-              }
+        if (zDist < warningDist && xDist < obs.width / 2 + 0.5) {
+          obs.isCrumbling = true;
+          obs.crumbleProgress = Math.min(1.0, obs.crumbleProgress + dt * 2.0);
+
+          // Visual vibration shake
+          obs.mesh.position.x = obsX + (Math.random() - 0.5) * 0.14 * obs.crumbleProgress;
+
+          // If platform has collapsed and player is on it
+          if (obs.crumbleProgress >= 1.0 && zDist < obs.depth / 2 && xDist < obs.width / 2) {
+            // Drop platform downward
+            obs.mesh.position.y -= dt * 14;
+
+            // If player hasn't jumped over it
+            if (playerY < 0.3) {
+              obs.cleared = true;
+              return { hit: true, type: ObstacleType.CRUMBLING_PLATFORM, fatal: true };
             }
           }
         }
@@ -92,7 +92,6 @@ export class CollisionSystem {
         const xDist = Math.abs(playerX - obsX);
 
         if (xDist < (obs.width / 2 + playerRadius - 0.08) && zDist < (obs.depth / 2 + 0.35)) {
-          // Cannot jump over high pillar
           if (playerY < obs.height - 0.2) {
             obs.cleared = true;
             return { hit: true, type: ObstacleType.RUINED_PILLAR, fatal: false };

@@ -1,3 +1,6 @@
+@import "@fontsource/cinzel/600.css";
+@import "@fontsource/cinzel/900.css";
+
 /* ==========================================================================
    MOONFALL RUN - Fantasy 3D Runner Styles
    Colors: Midnight Navy (#070a14, #0f172a), Silver White (#e2e8f0),
@@ -717,4 +720,63 @@ input:checked + .slider:before {
   15% { opacity: 1; transform: translateY(0); }
   85% { opacity: 1; transform: translateY(0); }
   100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.menu-three-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.costume-card {
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.costume-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.costume-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  padding: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.costume-item:hover, .costume-item.selected {
+  border-color: var(--mystic-cyan);
+  background: rgba(30, 41, 59, 0.7);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.costume-palette {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.palette-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.badge-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--silver-mid);
+  margin-left: 6px;
+  font-weight: normal;
 }

@@ -75,9 +75,13 @@ export class GameEngine {
         onResume: () => this.resume(),
         onRestart: () => this.restart(),
         onMainMenu: () => this.goToMainMenu(),
-        onQualityChange: (quality) => this.sceneManager.applyQuality(quality)
+        onQualityChange: (quality) => this.sceneManager.applyQuality(quality),
+        onSelectCostume: (costumeId) => this.luna.applyCostume(costumeId)
       }
     );
+
+    // Apply saved costume to Luna
+    this.luna.applyCostume(this.storage.getData().currentCostume);
 
     // 6. Bind Input & State Listeners
     this.initInputCallbacks();
@@ -156,6 +160,7 @@ export class GameEngine {
   public startRun(): void {
     this.isGameOverProcessed = false;
     this.luna.reset();
+    this.luna.applyCostume(this.storage.getData().currentCostume);
     this.scoreSystem.reset();
     this.difficultyDirector.reset();
     this.trackManager.initTrack();
@@ -174,6 +179,7 @@ export class GameEngine {
   public goToMainMenu(): void {
     this.isGameOverProcessed = false;
     this.luna.reset();
+    this.luna.applyCostume(this.storage.getData().currentCostume);
     this.scoreSystem.reset();
     this.difficultyDirector.reset();
     this.trackManager.initTrack();
@@ -196,10 +202,21 @@ export class GameEngine {
 
     if (this.stateManager.isMainMenu()) {
       // Main menu showcase
-      this.luna.mesh.rotation.y = Math.sin(time * 0.0015) * 0.4;
+      this.luna.setMenuPreviewMode(Math.sin(time * 0.0015) * 0.4);
       this.environment.update(0, dt);
       this.cameraFollower.update(this.luna.mesh.position, false, false, dt);
     } else if (this.stateManager.isRunning()) {
+      // If Luna has perished, play full tumble/fall death animation before showing Game Over modal
+      if (this.luna.state === CharacterState.DIE) {
+        this.luna.update(dt, 0);
+        this.cameraFollower.update(this.luna.mesh.position, false, false, dt);
+        if (this.luna.deathTimer >= 0.75 && !this.stateManager.isGameOver()) {
+          this.stateManager.setState(GameState.GAME_OVER);
+        }
+        this.sceneManager.render();
+        return;
+      }
+
       // 1. Difficulty & Speed
       const speed = this.difficultyDirector.update(this.scoreSystem.distance);
 
@@ -234,7 +251,8 @@ export class GameEngine {
       const collision = this.collisionSystem.checkCollisions(
         this.luna,
         this.trackManager.obstacles,
-        dt
+        dt,
+        speed
       );
 
       if (collision.hit) {
@@ -242,8 +260,7 @@ export class GameEngine {
           // Pit fall - cannot be protected by shield
           this.audio.playGameOver();
           this.capacitor.vibrateHeavy();
-          this.luna.hitObstacle();
-          this.stateManager.setState(GameState.GAME_OVER);
+          this.luna.hitObstacle(true);
         } else {
           // Regular obstacle hit
           if (this.luna.hasShield) {
@@ -255,17 +272,16 @@ export class GameEngine {
             this.audio.playHit();
             this.audio.playGameOver();
             this.capacitor.vibrateHeavy();
-            this.luna.hitObstacle();
-            this.stateManager.setState(GameState.GAME_OVER);
+            this.luna.hitObstacle(false);
           }
         }
       }
 
       // Instant pit fall boundary check
-      if (this.luna.posY < -4.0 && !this.stateManager.isGameOver()) {
+      if (this.luna.posY < -4.0) {
         this.audio.playGameOver();
         this.capacitor.vibrateHeavy();
-        this.stateManager.setState(GameState.GAME_OVER);
+        this.luna.hitObstacle(true);
       }
 
       // 7. Camera Follower

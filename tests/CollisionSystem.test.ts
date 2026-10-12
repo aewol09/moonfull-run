@@ -68,4 +68,31 @@ describe('CollisionSystem', () => {
     result = collisionSystem.checkCollisions(luna, [pillarLeft], 0.016);
     expect(result.hit).toBe(false);
   });
+
+  it('should trigger crumbling platform and detect pit fall when collapsed', () => {
+    const platform = ObstacleFactory.createCrumblingPlatform(0, -30);
+    luna.mesh.position.set(0, 0, -30);
+    luna.posY = 0;
+
+    // Platform begins crumbling
+    let result = collisionSystem.checkCollisions(luna, [platform], 0.016, 15);
+    expect(platform.isCrumbling).toBe(true);
+    expect(result.hit).toBe(false);
+
+    // Platform fully collapsed
+    platform.crumbleProgress = 1.0;
+    result = collisionSystem.checkCollisions(luna, [platform], 0.016, 15);
+    expect(result.hit).toBe(true);
+    expect(result.fatal).toBe(true);
+  });
+
+  it('should detect collision with moving obstacle at its position', () => {
+    const moving = ObstacleFactory.createMovingObstacle(0, -40);
+    moving.mesh.position.x = 0;
+    luna.mesh.position.set(0, 0, -40);
+
+    const result = collisionSystem.checkCollisions(luna, [moving], 0.016, 15);
+    expect(result.hit).toBe(true);
+    expect(result.fatal).toBe(false);
+  });
 });

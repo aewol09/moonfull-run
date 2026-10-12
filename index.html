@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#070a14" />
   <title>Moonfall Run - 문폴 런</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>">
   <link rel="stylesheet" href="/src/style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="app">
@@ -35,9 +33,12 @@
             <span class="btn-glow"></span>
             달리기 시작
           </button>
-          <div class="menu-sub-actions">
+          <div class="menu-sub-actions menu-three-cols">
+            <button id="btn-open-costumes" class="btn btn-secondary">
+              <span>👗 캐릭터</span>
+            </button>
             <button id="btn-open-shop" class="btn btn-secondary">
-              <span>🔮 성장 & 상점</span>
+              <span>🔮 성장</span>
             </button>
             <button id="btn-open-settings" class="btn btn-secondary">
               <span>⚙️ 설정</span>
@@ -139,7 +140,26 @@
         </div>
       </div>
 
-      <!-- 5. Shop & Growth Modal -->
+      <!-- 5. Costumes & Character Modal -->
+      <div id="costume-modal" class="modal-overlay hidden">
+        <div class="modal-card costume-card">
+          <div class="modal-header">
+            <h2 class="modal-title">루나의 서재 (코스튬)</h2>
+            <div class="currency-badge">
+              <span class="shard-icon">🌙</span>
+              <span id="costume-coin-count">0</span>
+            </div>
+          </div>
+          <div class="costume-list" id="costume-list">
+            <!-- Dynamically populated by UIManager -->
+          </div>
+          <div class="modal-footer">
+            <button id="btn-close-costumes" class="btn btn-secondary">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Shop & Growth Modal -->
       <div id="shop-modal" class="modal-overlay hidden">
         <div class="modal-card shop-card">
           <div class="modal-header">
@@ -210,18 +230,18 @@
             <div class="reward-box">
               <div class="reward-icon">🎁</div>
               <div class="reward-info">
-                <div class="reward-title">보상형 마법 축복 (광고 시청)</div>
-                <div class="reward-desc">달빛의 축복 영상을 시청하고 즉시 100 파편을 얻습니다.</div>
+                <div class="reward-title">보상형 마법 축복 (광고) <span class="badge-tag">준비 중</span></div>
+                <div class="reward-desc">Google Play 스토어 출시 후 광고 시청 보상이 활성화됩니다.</div>
               </div>
-              <button id="btn-watch-ad" class="btn btn-secondary">시청 (+100 🌙)</button>
+              <button id="btn-watch-ad" class="btn btn-secondary" disabled>준비 중</button>
             </div>
             <div class="reward-box">
               <div class="reward-icon">✨</div>
               <div class="reward-info">
-                <div class="reward-title">루나 스타터 팩 (인앱 결제)</div>
-                <div class="reward-desc">달의 파편 1,000개와 수호자의 축복을 획득합니다.</div>
+                <div class="reward-title">루나 스타터 팩 (인앱 상품) <span class="badge-tag">출시 예정</span></div>
+                <div class="reward-desc">달의 파편 1,000개와 수호자의 축복 패키지입니다.</div>
               </div>
-              <button id="btn-buy-starter" class="btn btn-primary">구매 (+1000 🌙)</button>
+              <button id="btn-buy-starter" class="btn btn-secondary" disabled>출시 예정</button>
             </div>
           </div>
 
@@ -231,7 +251,7 @@
         </div>
       </div>
 
-      <!-- 6. Settings Modal -->
+      <!-- 7. Settings Modal -->
       <div id="settings-modal" class="modal-overlay hidden">
         <div class="modal-card settings-card">
           <h2 class="modal-title">환경 설정</h2>

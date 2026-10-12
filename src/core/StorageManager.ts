@@ -25,11 +25,11 @@ export interface SaveData {
 
 export const UPGRADE_MAX_LEVEL = 5;
 
+// Costs to advance from level L to L+1: index 1 is Lv1->2, index 2 is Lv2->3, ..., index 4 is Lv4->5
 export const UPGRADE_COSTS: Record<keyof GameUpgrades, number[]> = {
-  // Lv 1 is base (0 cost to have), indices 1..4 are upgrade costs to Lv 2, 3, 4, 5
-  magnet: [0, 100, 250, 500, 1000, 2000],
-  shield: [0, 150, 350, 750, 1500, 3000],
-  headStart: [0, 100, 200, 450, 900, 1800]
+  magnet: [0, 100, 250, 500, 1000],
+  shield: [0, 150, 350, 750, 1500],
+  headStart: [0, 100, 200, 450, 900]
 };
 
 const DEFAULT_DATA: SaveData = {
@@ -89,7 +89,9 @@ export class StorageManager {
             ? parsed.settings.graphicsQuality
             : DEFAULT_DATA.settings.graphicsQuality
         },
-        unlockedCostumes: Array.isArray(parsed.unlockedCostumes) ? parsed.unlockedCostumes : ['default'],
+        unlockedCostumes: Array.isArray(parsed.unlockedCostumes) && parsed.unlockedCostumes.length > 0
+          ? Array.from(new Set(['default', ...parsed.unlockedCostumes]))
+          : ['default'],
         currentCostume: typeof parsed.currentCostume === 'string' ? parsed.currentCostume : 'default'
       };
     } catch {
@@ -144,9 +146,9 @@ export class StorageManager {
 
   public getUpgradeCost(type: keyof GameUpgrades): number | null {
     const currentLvl = this.data.upgrades[type];
-    if (currentLvl >= UPGRADE_MAX_LEVEL) return null; // Max level
-    const nextLvl = currentLvl + 1;
-    return UPGRADE_COSTS[type][nextLvl] ?? null;
+    if (currentLvl >= UPGRADE_MAX_LEVEL) return null; // Max level reached
+    // To advance from currentLvl to currentLvl + 1, cost is at index currentLvl
+    return UPGRADE_COSTS[type][currentLvl] ?? null;
   }
 
   public upgrade(type: keyof GameUpgrades): boolean {
@@ -158,6 +160,26 @@ export class StorageManager {
       return true;
     }
     return false;
+  }
+
+  public isCostumeUnlocked(costumeId: string): boolean {
+    return this.data.unlockedCostumes.includes(costumeId);
+  }
+
+  public unlockCostume(costumeId: string, cost: number): boolean {
+    if (this.isCostumeUnlocked(costumeId)) return true;
+    if (cost > 0 && !this.spendCoins(cost)) return false;
+
+    this.data.unlockedCostumes.push(costumeId);
+    this.save();
+    return true;
+  }
+
+  public equipCostume(costumeId: string): boolean {
+    if (!this.isCostumeUnlocked(costumeId)) return false;
+    this.data.currentCostume = costumeId;
+    this.save();
+    return true;
   }
 
   public updateSettings(settings: Partial<GameSettings>): void {

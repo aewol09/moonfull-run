@@ -47,16 +47,48 @@ describe('StorageManager', () => {
     expect(sm.getData().coins).toBe(300);
   });
 
-  it('should process upgrades and cap at max level', () => {
+  it('should process upgrades with exact cost progression and cap at max level', () => {
     const sm = new StorageManager();
-    sm.addCoins(10000);
+    // Default Lv 1 cost should be 100
+    expect(sm.getUpgradeCost('magnet')).toBe(100);
 
-    for (let i = 1; i < UPGRADE_MAX_LEVEL; i++) {
-      expect(sm.upgrade('magnet')).toBe(true);
-    }
+    sm.addCoins(100);
+    expect(sm.upgrade('magnet')).toBe(true);
+    expect(sm.getData().upgrades.magnet).toBe(2);
+    expect(sm.getUpgradeCost('magnet')).toBe(250);
 
-    expect(sm.getData().upgrades.magnet).toBe(UPGRADE_MAX_LEVEL);
+    sm.addCoins(250);
+    expect(sm.upgrade('magnet')).toBe(true);
+    expect(sm.getData().upgrades.magnet).toBe(3);
+    expect(sm.getUpgradeCost('magnet')).toBe(500);
+
+    sm.addCoins(500);
+    expect(sm.upgrade('magnet')).toBe(true);
+    expect(sm.getData().upgrades.magnet).toBe(4);
+    expect(sm.getUpgradeCost('magnet')).toBe(1000);
+
+    sm.addCoins(1000);
+    expect(sm.upgrade('magnet')).toBe(true);
+    expect(sm.getData().upgrades.magnet).toBe(5);
     expect(sm.getUpgradeCost('magnet')).toBeNull();
     expect(sm.upgrade('magnet')).toBe(false); // cannot upgrade beyond max
+  });
+
+  it('should manage costume unlock and equipping persistence', () => {
+    const sm = new StorageManager();
+    expect(sm.getData().currentCostume).toBe('default');
+    expect(sm.isCostumeUnlocked('default')).toBe(true);
+    expect(sm.isCostumeUnlocked('guardian')).toBe(false);
+
+    // Cannot equip locked costume
+    expect(sm.equipCostume('guardian')).toBe(false);
+
+    // Unlock costume
+    sm.unlockCostume('guardian');
+    expect(sm.isCostumeUnlocked('guardian')).toBe(true);
+
+    // Now equip succeeds
+    expect(sm.equipCostume('guardian')).toBe(true);
+    expect(sm.getData().currentCostume).toBe('guardian');
   });
 });

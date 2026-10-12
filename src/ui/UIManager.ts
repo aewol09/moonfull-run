@@ -1,6 +1,7 @@
 import { GameState, GameStateManager } from '../core/GameState';
 import { StorageManager, UPGRADE_MAX_LEVEL, GraphicsQuality } from '../core/StorageManager';
 import { AudioManager } from '../core/AudioManager';
+import { COSTUME_PRESETS } from '../entities/LunaCharacter';
 
 export interface UIEventListeners {
   onStartRun: () => void;
@@ -8,6 +9,7 @@ export interface UIEventListeners {
   onRestart: () => void;
   onMainMenu: () => void;
   onQualityChange: (quality: GraphicsQuality) => void;
+  onSelectCostume: (costumeId: string) => void;
 }
 
 export class UIManager {
@@ -38,8 +40,10 @@ export class UIManager {
     const coins = this.storage.getData().coins;
     const menuEl = document.getElementById('menu-coin-count');
     const shopEl = document.getElementById('shop-coin-count');
+    const costumeEl = document.getElementById('costume-coin-count');
     if (menuEl) menuEl.textContent = coins.toLocaleString();
     if (shopEl) shopEl.textContent = coins.toLocaleString();
+    if (costumeEl) costumeEl.textContent = coins.toLocaleString();
   }
 
   public updateHUD(
@@ -169,6 +173,98 @@ export class UIManager {
     }, 2500);
   }
 
+  // --- Costumes List Rendering ---
+
+  public updateCostumeList(): void {
+    const container = document.getElementById('costume-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const data = this.storage.getData();
+    const currentEquipped = data.currentCostume;
+
+    Object.values(COSTUME_PRESETS).forEach(preset => {
+      const isUnlocked = this.storage.isCostumeUnlocked(preset.id);
+      const isEquipped = currentEquipped === preset.id;
+
+      const card = document.createElement('div');
+      card.className = `costume-item ${isEquipped ? 'selected' : ''}`;
+
+      const hexHair = '#' + preset.hairColor.toString(16).padStart(6, '0');
+      const hexTunic = '#' + preset.tunicColor.toString(16).padStart(6, '0');
+      const hexCape = '#' + preset.capeColor.toString(16).padStart(6, '0');
+
+      card.innerHTML = `
+        <div class="item-icon-box">👗</div>
+        <div class="item-info">
+          <div class="item-title">
+            ${preset.name}
+            ${isEquipped ? '<span class="item-lvl">장착 중</span>' : ''}
+          </div>
+          <div class="item-desc">${preset.description}</div>
+          <div class="costume-palette">
+            <span class="palette-dot" style="background-color: ${hexHair};" title="헤어"></span>
+            <span class="palette-dot" style="background-color: ${hexTunic};" title="의상"></span>
+            <span class="palette-dot" style="background-color: ${hexCape};" title="망토"></span>
+          </div>
+        </div>
+        <button class="btn-buy ${isEquipped ? 'equipped' : ''}" data-costume="${preset.id}">
+          ${isEquipped
+            ? '장착 중'
+            : isUnlocked
+              ? '장착하기'
+              : `<span class="shard-icon">🌙</span> ${preset.cost}`}
+        </button>
+      `;
+
+      // Live 3D Preview on card click
+      card.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'BUTTON' || target.closest('button')) {
+          return; // Handled by button listener
+        }
+        this.listeners.onSelectCostume(preset.id);
+        document.querySelectorAll('.costume-item').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+      });
+
+      // Buy or Equip action
+      const btn = card.querySelector('button') as HTMLButtonElement;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.audio.playClick();
+
+        if (isEquipped) {
+          return;
+        }
+
+        if (isUnlocked) {
+          // Equip
+          this.storage.equipCostume(preset.id);
+          this.listeners.onSelectCostume(preset.id);
+          this.showToast(`[${preset.name}] 코스튬을 장착했습니다.`);
+          this.updateCostumeList();
+        } else {
+          // Purchase & Unlock
+          if (this.storage.unlockCostume(preset.id, preset.cost)) {
+            this.storage.equipCostume(preset.id);
+            this.listeners.onSelectCostume(preset.id);
+            this.audio.playCoin();
+            this.showToast(`[${preset.name}] 코스튬 해금 및 장착 완료!`);
+            this.updateCostumeList();
+            this.updateWalletDisplays();
+          } else {
+            this.showToast('달의 파편이 부족합니다.');
+          }
+        }
+      });
+
+      container.appendChild(card);
+    });
+
+    this.updateWalletDisplays();
+  }
+
   // --- Modal & Shop Handling ---
 
   private updateShopCards(): void {
@@ -264,6 +360,17 @@ export class UIManager {
       this.audio.playClick();
       this.audio.startBgm();
       this.listeners.onStartRun();
+    });
+
+    document.getElementById('btn-open-costumes')?.addEventListener('click', () => {
+      this.audio.playClick();
+      this.updateCostumeList();
+      document.getElementById('costume-modal')?.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-costumes')?.addEventListener('click', () => {
+      this.audio.playClick();
+      document.getElementById('costume-modal')?.classList.add('hidden');
     });
 
     document.getElementById('btn-open-shop')?.addEventListener('click', () => {
@@ -369,16 +476,12 @@ export class UIManager {
 
     document.getElementById('btn-watch-ad')?.addEventListener('click', () => {
       this.audio.playClick();
-      this.showToast('광고 시청 완료! +100 파편 지급');
-      this.storage.addCoins(100);
-      this.updateShopCards();
+      this.showToast('스토어 정식 출시 후 광고 시청 보상이 활성화됩니다.');
     });
 
     document.getElementById('btn-buy-starter')?.addEventListener('click', () => {
-      this.audio.playCoin();
-      this.showToast('루나 스타터 팩 획득! +1,000 파편 지급');
-      this.storage.addCoins(1000);
-      this.updateShopCards();
+      this.audio.playClick();
+      this.showToast('스토어 정식 출시 후 인앱 결제 상품이 오픈됩니다.');
     });
 
     // 7. Settings Toggles

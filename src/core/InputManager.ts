@@ -13,7 +13,7 @@ export class InputManager {
   private touchStartY = 0;
   private touchStartTime = 0;
   private isTouching = false;
-  private readonly SWIPE_THRESHOLD = 28; // Min pixels for swipe
+  private readonly SWIPE_THRESHOLD = 26; // Min pixels for swipe
   private readonly MAX_SWIPE_TIME_MS = 600; // Max duration to distinguish swipe from hold
 
   private callback: InputCallback | null = null;
@@ -39,10 +39,12 @@ export class InputManager {
   public setProcessingTransition(busy: boolean): void {
     this.isProcessingTransition = busy;
     if (!busy && this.bufferedAction !== null) {
-      // Consume the single buffered action
+      // Consume the single buffered horizontal movement
       const nextAction = this.bufferedAction;
       this.bufferedAction = null;
-      this.emitAction(nextAction);
+      if (this.callback && this.isEnabled) {
+        this.callback(nextAction);
+      }
     }
   }
 
@@ -53,10 +55,14 @@ export class InputManager {
   private emitAction(action: InputAction): void {
     if (!this.isEnabled) return;
 
-    if (this.isProcessingTransition) {
-      // Buffer at most 1 input while character is transitioning lanes
-      this.bufferedAction = action;
-      return;
+    // Recommendation 3: Jump, Slide, Pause are executed IMMEDIATELY even during lane transition!
+    // Only lane changes (MOVE_LEFT, MOVE_RIGHT) are buffered if currently transitioning
+    if (action === InputAction.MOVE_LEFT || action === InputAction.MOVE_RIGHT) {
+      if (this.isProcessingTransition) {
+        // Buffer at most 1 lane move while transitioning
+        this.bufferedAction = action;
+        return;
+      }
     }
 
     if (this.callback) {
@@ -65,6 +71,8 @@ export class InputManager {
   }
 
   private initEventListeners(): void {
+    if (typeof window === 'undefined') return;
+
     // 1. Touch Events on document with passive: false to prevent scrolling
     window.addEventListener(
       'touchstart',

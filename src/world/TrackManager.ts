@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { LANE_WIDTH } from '../entities/LunaCharacter';
-import { ObstacleFactory, ObstacleInstance, ObstacleType } from './Obstacles';
+import { ObstaclePool, ObstacleInstance, ObstacleType } from './Obstacles';
 import { ShardManager } from './ShardManager';
 import { PatternManager } from './PatternManager';
 
 export interface TrackChunk {
   mesh: THREE.Group;
-  zStart: number;
+  zCenter: number;
   length: number;
   active: boolean;
 }
@@ -15,13 +15,18 @@ export class TrackManager {
   private scene: THREE.Scene;
   private shardManager: ShardManager;
   private patternManager: PatternManager;
+  private obstaclePool: ObstaclePool;
 
   public chunks: TrackChunk[] = [];
-  public obstacles: ObstacleInstance[] = [];
+  public activeObstacles: ObstacleInstance[] = [];
+  public get obstacles(): ObstacleInstance[] {
+    return this.activeObstacles;
+  }
 
   private readonly chunkLength = 40;
-  private readonly visibleChunks = 5;
-  private nextSpawnZ = 0;
+  private readonly visibleChunks = 6; // Keep 240m of track visible ahead
+  private nextChunkZ = 0;
+  private nextPatternZ = -25; // First pattern begins 25m ahead of start
 
   // Track Materials
   private roadMat = new THREE.MeshStandardMaterial({
@@ -33,7 +38,7 @@ export class TrackManager {
   private laneBorderMat = new THREE.MeshBasicMaterial({
     color: 0x38bdf8,
     transparent: true,
-    opacity: 0.4
+    opacity: 0.35
   });
 
   private pillarSideMat = new THREE.MeshStandardMaterial({
@@ -45,15 +50,17 @@ export class TrackManager {
     this.scene = scene;
     this.shardManager = shardManager;
     this.patternManager = new PatternManager();
+    this.obstaclePool = new ObstaclePool(scene);
   }
 
   public initTrack(): void {
     this.clear();
-    this.nextSpawnZ = 10; // Start slightly behind player
+    this.nextChunkZ = 10; // Start 10m behind player
+    this.nextPatternZ = -25; // 25m obstacle-free runway
 
-    // Spawn initial chunks
+    // Pre-populate track chunks
     for (let i = 0; i < this.visibleChunks; i++) {
-      this.spawnChunk(i > 1); // First two chunks are obstacle-free safe runway
+      this.spawnChunk();
     }
   }
 
@@ -70,17 +77,17 @@ export class TrackManager {
 
     // 2. Lane Guide Lines (-0.5 * LANE_WIDTH, 0.5 * LANE_WIDTH)
     [-0.5 * LANE_WIDTH, 0.5 * LANE_WIDTH].forEach(x => {
-      const lineGeo = new THREE.PlaneGeometry(0.1, this.chunkLength);
+      const lineGeo = new THREE.PlaneGeometry(0.12, this.chunkLength);
       lineGeo.rotateX(-Math.PI / 2);
       const lineMesh = new THREE.Mesh(lineGeo, this.laneBorderMat);
-      lineMesh.position.set(x, 0.01, 0);
+      lineMesh.position.set(x, 0.015, 0);
       group.add(lineMesh);
     });
 
     // 3. Side Boundary Ancient Pillars
     for (let z = -this.chunkLength / 2 + 5; z <= this.chunkLength / 2 - 5; z += 10) {
-      [-trackWidth / 2 - 0.3, trackWidth / 2 + 0.3].forEach(sideX => {
-        const pillarGeo = new THREE.CylinderGeometry(0.25, 0.3, 1.8, 8);
+      [-trackWidth / 2 - 0.35, trackWidth / 2 + 0.35].forEach(sideX => {
+        const pillarGeo = new THREE.CylinderGeometry(0.25, 0.32, 1.8, 8);
         const pillarMesh = new THREE.Mesh(pillarGeo, this.pillarSideMat);
         pillarMesh.position.set(sideX, 0.8, z);
         group.add(pillarMesh);
@@ -90,7 +97,7 @@ export class TrackManager {
     return group;
   }
 
-  public spawnChunk(withObstacles: boolean, currentDistance = 0, currentSpeed = 14): void {
+  private spawnChunk(): void {
     let chunk = this.chunks.find(c => !c.active);
 
     if (!chunk) {
@@ -98,100 +105,81 @@ export class TrackManager {
       this.scene.add(mesh);
       chunk = {
         mesh,
-        zStart: this.nextSpawnZ,
+        zCenter: this.nextChunkZ - this.chunkLength / 2,
         length: this.chunkLength,
         active: true
       };
       this.chunks.push(chunk);
     } else {
       chunk.active = true;
-      chunk.zStart = this.nextSpawnZ;
+      chunk.zCenter = this.nextChunkZ - this.chunkLength / 2;
       chunk.mesh.visible = true;
     }
 
-    // Set chunk position (center of chunk)
-    chunk.mesh.position.set(0, 0, this.nextSpawnZ - this.chunkLength / 2);
-
-    if (withObstacles) {
-      this.populateChunkContent(chunk.zStart, currentDistance, currentSpeed);
-    }
-
-    this.nextSpawnZ -= this.chunkLength;
+    chunk.mesh.position.set(0, 0, chunk.zCenter);
+    this.nextChunkZ -= this.chunkLength;
   }
 
-  private populateChunkContent(chunkStartZ: number, distance: number, speed: number): void {
-    const { pattern, spacingMultiplier } = this.patternManager.getNextPattern(distance, speed);
-
-    // Spawn obstacles defined in pattern
-    for (const obsDef of pattern.obstacles) {
-      const zPos = chunkStartZ + obsDef.offsetZ * spacingMultiplier;
-      let obsInstance: ObstacleInstance | null = null;
-
-      switch (obsDef.type) {
-        case ObstacleType.RUINED_PILLAR:
-          obsInstance = ObstacleFactory.createPillar(obsDef.lane, zPos);
-          break;
-        case ObstacleType.LOW_ARCH:
-          obsInstance = ObstacleFactory.createLowArch(obsDef.lane, zPos);
-          break;
-        case ObstacleType.BROKEN_BRIDGE:
-          obsInstance = ObstacleFactory.createBrokenBridge(obsDef.lane, zPos);
-          break;
-        case ObstacleType.CRUMBLING_PLATFORM:
-          obsInstance = ObstacleFactory.createCrumblingPlatform(obsDef.lane, zPos);
-          break;
-        case ObstacleType.MOVING_OBSTACLE:
-          obsInstance = ObstacleFactory.createMovingObstacle(zPos);
-          break;
-      }
-
-      if (obsInstance) {
-        this.scene.add(obsInstance.mesh);
-        this.obstacles.push(obsInstance);
+  public update(playerZ: number, currentDistance: number, currentSpeed: number): void {
+    // 1. Recycle and advance track chunks ahead of player
+    for (const chunk of this.chunks) {
+      if (chunk.active && (chunk.zCenter - chunk.length / 2) > playerZ + 25) {
+        chunk.active = false;
+        chunk.mesh.visible = false;
+        this.spawnChunk();
       }
     }
 
-    // Spawn shards defined in pattern
+    // 2. Spawn next pattern continuously ahead of player (keep ~140m queued ahead)
+    while (this.nextPatternZ > playerZ - 140) {
+      this.spawnNextPattern(currentDistance, currentSpeed);
+    }
+
+    // 3. Update active obstacles and recycle behind player
+    for (let i = this.activeObstacles.length - 1; i >= 0; i--) {
+      const obs = this.activeObstacles[i];
+
+      // Oscillating moving obstacle
+      if (obs.type === ObstacleType.MOVING_OBSTACLE && obs.active) {
+        obs.oscillationTime += 0.035;
+        obs.mesh.position.x = Math.sin(obs.oscillationTime) * (LANE_WIDTH * 1.15);
+      }
+
+      // Recycle obstacles that fell 18m behind player
+      if (obs.zPos > playerZ + 18) {
+        this.obstaclePool.recycle(obs);
+        this.activeObstacles.splice(i, 1);
+      }
+    }
+  }
+
+  private spawnNextPattern(distance: number, speed: number): void {
+    const { pattern, spacingMultiplier } = this.patternManager.getNextPattern(distance, speed);
+    const patternStartZ = this.nextPatternZ;
+
+    // Spawn obstacles in pattern
+    for (const obsDef of pattern.obstacles) {
+      const zPos = patternStartZ + obsDef.offsetZ * spacingMultiplier;
+      const obs = this.obstaclePool.obtain(obsDef.type, obsDef.lane, zPos);
+      this.activeObstacles.push(obs);
+    }
+
+    // Spawn shards in pattern
     for (const shardDef of pattern.shards) {
-      const startZ = chunkStartZ + shardDef.offsetZ * spacingMultiplier;
+      const startZ = patternStartZ + shardDef.offsetZ * spacingMultiplier;
       this.shardManager.spawnShardLine(
         shardDef.lane,
         startZ,
         shardDef.count,
-        2.4 * spacingMultiplier,
+        2.5 * spacingMultiplier,
         shardDef.height ?? 0.8
       );
     }
-  }
 
-  public update(playerZ: number, currentDistance: number, currentSpeed: number): void {
-    // 1. Check if furthest chunk is behind player and recycle
-    for (const chunk of this.chunks) {
-      if (chunk.active && chunk.zStart - chunk.length > playerZ + 20) {
-        chunk.active = false;
-        chunk.mesh.visible = false;
-        // Spawn a new chunk ahead
-        this.spawnChunk(true, currentDistance, currentSpeed);
-      }
-    }
-
-    // 2. Clean up or update active obstacles
-    for (let i = this.obstacles.length - 1; i >= 0; i--) {
-      const obs = this.obstacles[i];
-
-      // Moving obstacle horizontal oscillation
-      if (obs.type === ObstacleType.MOVING_OBSTACLE && obs.active) {
-        obs.oscillationTime = (obs.oscillationTime || 0) + 0.035;
-        obs.mesh.position.x = Math.sin(obs.oscillationTime) * (LANE_WIDTH * 1.1);
-      }
-
-      // Recycle obstacles behind player
-      if (obs.zPos > playerZ + 15) {
-        obs.active = false;
-        this.scene.remove(obs.mesh);
-        this.obstacles.splice(i, 1);
-      }
-    }
+    // Advance cursor: pattern length + safe dodging buffer zone
+    const patternSpan = pattern.length * spacingMultiplier;
+    const safeBuffer = Math.max(14.0, speed * 0.8); // Always guarantee 0.8s of clear track between patterns
+    this.nextPatternZ -= (patternSpan + safeBuffer);
   }
 
   public clear(): void {
@@ -199,10 +187,9 @@ export class TrackManager {
       chunk.active = false;
       chunk.mesh.visible = false;
     }
-    for (const obs of this.obstacles) {
-      this.scene.remove(obs.mesh);
-    }
-    this.obstacles = [];
+    this.obstaclePool.clearAll();
+    this.activeObstacles = [];
+    this.shardManager.clear();
     this.patternManager.reset();
   }
 }
