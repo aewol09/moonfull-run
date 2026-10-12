@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TextureGenerator } from './TextureGenerator';
 
 export class WorldEnvironment {
   private scene: THREE.Scene;
@@ -29,25 +30,38 @@ export class WorldEnvironment {
     this.dirLight.shadow.camera.bottom = -shadowD;
     this.scene.add(this.dirLight);
 
-    // 2. Giant Glowing Celestial Moon
+    // 2. Giant Glowing Celestial Moon with Crater Surface Map
     const moonGeo = new THREE.SphereGeometry(18, 32, 32);
+    const moonTex = TextureGenerator.createMoonTexture();
     const moonMat = new THREE.MeshBasicMaterial({
-      color: 0xfef08a,
+      map: moonTex,
+      color: 0xffffff
     });
     this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
     this.moonMesh.position.set(25, 45, -160);
     this.scene.add(this.moonMesh);
 
-    // Moon Glow Halo
-    const haloGeo = new THREE.SphereGeometry(21, 32, 32);
+    // Inner Moon Rim Glow
+    const haloGeo = new THREE.SphereGeometry(20, 32, 32);
     const haloMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.18,
+      opacity: 0.28,
       side: THREE.BackSide
     });
     const haloMesh = new THREE.Mesh(haloGeo, haloMat);
     this.moonMesh.add(haloMesh);
+
+    // Outer Ethereal Atmosphere Aura
+    const outerHaloGeo = new THREE.SphereGeometry(23.5, 32, 32);
+    const outerHaloMat = new THREE.MeshBasicMaterial({
+      color: 0x818cf8,
+      transparent: true,
+      opacity: 0.12,
+      side: THREE.BackSide
+    });
+    const outerHaloMesh = new THREE.Mesh(outerHaloGeo, outerHaloMat);
+    this.moonMesh.add(outerHaloMesh);
 
     // 3. Celestial Starfield
     const starsCount = 400;

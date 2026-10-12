@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TextureGenerator } from '../render/TextureGenerator';
 
 export enum CharacterState {
   RUN = 'RUN',
@@ -22,6 +23,9 @@ export interface CostumeDef {
   capeColor: number;
   accentColor: number;
   glowColor: number;
+  tunicHex: string;
+  trimHex: string;
+  eyeColor: string;
 }
 
 export const COSTUME_PRESETS: Record<string, CostumeDef> = {
@@ -34,18 +38,24 @@ export const COSTUME_PRESETS: Record<string, CostumeDef> = {
     tunicColor: 0x0f172a,
     capeColor: 0x1e1b4b,
     accentColor: 0xfbbf24,
-    glowColor: 0x38bdf8
+    glowColor: 0x38bdf8,
+    tunicHex: '#0f172a',
+    trimHex: '#38bdf8',
+    eyeColor: '#38bdf8'
   },
   guardian: {
     id: 'guardian',
     name: '성스러운 수호자',
     description: '고대 별의 기운을 담은 딥 바이올렛 수호 아머',
     cost: 300,
-    hairColor: 0xf1f5f9,
+    hairColor: 0xf8fafc,
     tunicColor: 0x2e1065,
     capeColor: 0x4c1d95,
     accentColor: 0xa855f7,
-    glowColor: 0xc084fc
+    glowColor: 0xc084fc,
+    tunicHex: '#2e1065',
+    trimHex: '#c084fc',
+    eyeColor: '#a855f7'
   },
   dawn: {
     id: 'dawn',
@@ -56,13 +66,16 @@ export const COSTUME_PRESETS: Record<string, CostumeDef> = {
     tunicColor: 0x78350f,
     capeColor: 0xd97706,
     accentColor: 0xfbbf24,
-    glowColor: 0xfde047
+    glowColor: 0xfde047,
+    tunicHex: '#78350f',
+    trimHex: '#fbbf24',
+    eyeColor: '#f59e0b'
   }
 };
 
 export class LunaCharacter {
   public mesh: THREE.Group;
-  public visualGroup: THREE.Group; // Group that gets rotated Math.PI in run mode so face points -Z
+  public visualGroup: THREE.Group; // Group rotated Math.PI in run mode so face points -Z
   public state: CharacterState = CharacterState.RUN;
 
   // Lane position: -1 (Left), 0 (Center), 1 (Right)
@@ -94,11 +107,16 @@ export class LunaCharacter {
   private capeMesh: THREE.Mesh;
   private hairMesh: THREE.Mesh;
   private ponytailMesh: THREE.Mesh;
+  private ponytailSecondary: THREE.Mesh;
   private torsoMesh: THREE.Mesh;
   private pendantMesh: THREE.Mesh;
   private shieldBubble: THREE.Mesh;
   private magicTrailPoints: THREE.Points;
   private trailPositions: Float32Array;
+
+  // Face Elements
+  private leftEyeMesh: THREE.Mesh;
+  private rightEyeMesh: THREE.Mesh;
 
   // Shared Materials for costume switching
   private hairMat: THREE.MeshStandardMaterial;
@@ -106,6 +124,9 @@ export class LunaCharacter {
   private capeMat: THREE.MeshStandardMaterial;
   private pendantMat: THREE.MeshStandardMaterial;
   private glowMat: THREE.MeshBasicMaterial;
+  private bootsMat: THREE.MeshStandardMaterial;
+  private skinMat: THREE.MeshStandardMaterial;
+  private eyeMat: THREE.MeshBasicMaterial;
 
   // Animation clocks & flags
   private runAnimTime = 0;
@@ -120,101 +141,217 @@ export class LunaCharacter {
     this.visualGroup = new THREE.Group();
     this.mesh.add(this.visualGroup);
 
-    // Initial default materials
+    // Initial default materials with procedural fabric textures
     const preset = COSTUME_PRESETS.default;
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xffedd5, roughness: 0.6 });
-    this.hairMat = new THREE.MeshStandardMaterial({ color: preset.hairColor, roughness: 0.35, metalness: 0.3 });
-    this.tunicMat = new THREE.MeshStandardMaterial({ color: preset.tunicColor, roughness: 0.5, metalness: 0.2 });
-    this.capeMat = new THREE.MeshStandardMaterial({ color: preset.capeColor, side: THREE.DoubleSide, roughness: 0.6 });
-    this.pendantMat = new THREE.MeshStandardMaterial({ color: preset.accentColor, metalness: 0.8, roughness: 0.2 });
+    const fabricTex = TextureGenerator.createCostumeFabricTexture(preset.tunicHex, preset.trimHex);
+    const eyeTex = TextureGenerator.createEyeTexture(preset.eyeColor);
+
+    this.skinMat = new THREE.MeshStandardMaterial({
+      color: 0xffedd5,
+      roughness: 0.5,
+      metalness: 0.05
+    });
+
+    this.hairMat = new THREE.MeshStandardMaterial({
+      color: preset.hairColor,
+      roughness: 0.35,
+      metalness: 0.25
+    });
+
+    this.tunicMat = new THREE.MeshStandardMaterial({
+      map: fabricTex,
+      color: preset.tunicColor,
+      roughness: 0.6,
+      metalness: 0.15
+    });
+
+    this.capeMat = new THREE.MeshStandardMaterial({
+      map: fabricTex,
+      color: preset.capeColor,
+      side: THREE.DoubleSide,
+      roughness: 0.65,
+      metalness: 0.2
+    });
+
+    this.pendantMat = new THREE.MeshStandardMaterial({
+      color: preset.accentColor,
+      metalness: 0.85,
+      roughness: 0.15,
+      emissive: preset.accentColor,
+      emissiveIntensity: 0.3
+    });
+
     this.glowMat = new THREE.MeshBasicMaterial({ color: preset.glowColor });
 
-    // Torso (Armor / Tunic)
+    this.bootsMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.55,
+      metalness: 0.3
+    });
+
+    this.eyeMat = new THREE.MeshBasicMaterial({
+      map: eyeTex,
+      transparent: true
+    });
+
+    // --- 1. Torso & Armor ---
     this.torsoGroup = new THREE.Group();
     this.torsoGroup.position.set(0, 0.9, 0);
 
-    const torsoGeo = new THREE.CylinderGeometry(0.24, 0.2, 0.55, 12);
+    const torsoGeo = new THREE.CylinderGeometry(0.24, 0.19, 0.56, 12);
     this.torsoMesh = new THREE.Mesh(torsoGeo, this.tunicMat);
     this.torsoMesh.castShadow = true;
     this.torsoGroup.add(this.torsoMesh);
 
+    // Gold waist belt
+    const beltGeo = new THREE.CylinderGeometry(0.21, 0.2, 0.08, 12);
+    const beltMat = new THREE.MeshStandardMaterial({ color: preset.accentColor, metalness: 0.7, roughness: 0.3 });
+    const beltMesh = new THREE.Mesh(beltGeo, beltMat);
+    beltMesh.position.y = -0.22;
+    this.torsoGroup.add(beltMesh);
+
     // Glowing Moon Pendant (Front of chest: local +Z)
-    const pendantGeo = new THREE.TorusGeometry(0.08, 0.025, 8, 16, Math.PI * 1.5);
+    const pendantGeo = new THREE.TorusGeometry(0.08, 0.024, 8, 16, Math.PI * 1.5);
     this.pendantMesh = new THREE.Mesh(pendantGeo, this.pendantMat);
-    this.pendantMesh.position.set(0, 0.12, 0.22);
+    this.pendantMesh.position.set(0, 0.12, 0.23);
     this.torsoGroup.add(this.pendantMesh);
 
-    // Head
+    // --- 2. Head & Cute Anime Face ---
     this.headGroup = new THREE.Group();
     this.headGroup.position.set(0, 0.42, 0);
 
     const headGeo = new THREE.SphereGeometry(0.22, 16, 16);
-    const headMesh = new THREE.Mesh(headGeo, skinMat);
+    const headMesh = new THREE.Mesh(headGeo, this.skinMat);
     headMesh.castShadow = true;
     this.headGroup.add(headMesh);
 
-    // Face eyes (small cute mystic eyes on local +Z)
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
-    [-0.07, 0.07].forEach(eyeX => {
-      const eyeGeo = new THREE.SphereGeometry(0.025, 8, 8);
-      const eyeMesh = new THREE.Mesh(eyeGeo, eyeMat);
-      eyeMesh.position.set(eyeX, 0.02, 0.2);
-      this.headGroup.add(eyeMesh);
-    });
+    // Expressive Anime Eyes on local +Z face
+    const eyeGeo = new THREE.PlaneGeometry(0.08, 0.1);
+    this.leftEyeMesh = new THREE.Mesh(eyeGeo, this.eyeMat);
+    this.leftEyeMesh.position.set(-0.075, 0.02, 0.21);
+    this.headGroup.add(this.leftEyeMesh);
 
-    // Silver Hair
-    const hairGeo = new THREE.SphereGeometry(0.24, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.65);
+    this.rightEyeMesh = new THREE.Mesh(eyeGeo, this.eyeMat);
+    this.rightEyeMesh.position.set(0.075, 0.02, 0.21);
+    this.headGroup.add(this.rightEyeMesh);
+
+    // Soft Blush on cheeks
+    const blushGeo = new THREE.PlaneGeometry(0.05, 0.025);
+    const blushMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35 });
+    const leftBlush = new THREE.Mesh(blushGeo, blushMat);
+    leftBlush.position.set(-0.09, -0.04, 0.208);
+    this.headGroup.add(leftBlush);
+    const rightBlush = new THREE.Mesh(blushGeo, blushMat);
+    rightBlush.position.set(0.09, -0.04, 0.208);
+    this.headGroup.add(rightBlush);
+
+    // --- 3. Hair (Crown, Bangs, Flowing Locks & Ponytail) ---
+    // Crown hair
+    const hairGeo = new THREE.SphereGeometry(0.245, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.65);
     this.hairMesh = new THREE.Mesh(hairGeo, this.hairMat);
-    this.hairMesh.position.set(0, 0.04, -0.02);
+    this.hairMesh.position.set(0, 0.04, -0.01);
     this.headGroup.add(this.hairMesh);
 
-    // Hair Ponytail / Flowing Locks (Back of head: local -Z)
-    const tailGeo = new THREE.ConeGeometry(0.12, 0.5, 8);
+    // Front Bangs framing the forehead
+    [-0.07, 0, 0.07].forEach((bx, i) => {
+      const bangGeo = new THREE.ConeGeometry(0.045, 0.16, 5);
+      const bangMesh = new THREE.Mesh(bangGeo, this.hairMat);
+      bangMesh.rotation.x = Math.PI * 0.88;
+      bangMesh.rotation.z = (i - 1) * 0.18;
+      bangMesh.position.set(bx, 0.14, 0.18);
+      this.headGroup.add(bangMesh);
+    });
+
+    // Side hair locks
+    [-0.19, 0.19].forEach((sx) => {
+      const lockGeo = new THREE.ConeGeometry(0.04, 0.28, 5);
+      const lockMesh = new THREE.Mesh(lockGeo, this.hairMat);
+      lockMesh.rotation.x = Math.PI * 0.95;
+      lockMesh.position.set(sx, -0.02, 0.06);
+      this.headGroup.add(lockMesh);
+    });
+
+    // Main Volumetric Ponytail (Back of head: local -Z)
+    const tailGeo = new THREE.ConeGeometry(0.13, 0.55, 8);
     this.ponytailMesh = new THREE.Mesh(tailGeo, this.hairMat);
     this.ponytailMesh.rotation.x = -Math.PI * 0.68;
-    this.ponytailMesh.position.set(0, -0.05, -0.26);
+    this.ponytailMesh.position.set(0, -0.05, -0.27);
     this.headGroup.add(this.ponytailMesh);
+
+    // Secondary ponytail flare lock
+    const tailSubGeo = new THREE.ConeGeometry(0.08, 0.42, 6);
+    this.ponytailSecondary = new THREE.Mesh(tailSubGeo, this.hairMat);
+    this.ponytailSecondary.rotation.x = -Math.PI * 0.74;
+    this.ponytailSecondary.position.set(0, -0.12, -0.32);
+    this.headGroup.add(this.ponytailSecondary);
+
+    // Hair Ribbon / Tie Ring
+    const ribbonGeo = new THREE.TorusGeometry(0.09, 0.025, 6, 12);
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: preset.accentColor, metalness: 0.6 });
+    const ribbonMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    ribbonMesh.rotation.x = Math.PI * 0.32;
+    ribbonMesh.position.set(0, 0.06, -0.21);
+    this.headGroup.add(ribbonMesh);
 
     this.torsoGroup.add(this.headGroup);
 
-    // Arms
-    const armGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.45, 8);
+    // --- 4. Arms with Pauldrons & Bracers ---
+    const armGeo = new THREE.CylinderGeometry(0.065, 0.055, 0.46, 8);
     armGeo.translate(0, -0.2, 0);
 
+    const pauldronGeo = new THREE.SphereGeometry(0.11, 8, 8, 0, Math.PI * 2, 0, Math.PI * 0.6);
+
     this.leftArm = new THREE.Group();
-    this.leftArm.position.set(-0.32, 0.2, 0);
+    this.leftArm.position.set(-0.31, 0.2, 0);
     const leftArmMesh = new THREE.Mesh(armGeo, this.tunicMat);
     leftArmMesh.castShadow = true;
     this.leftArm.add(leftArmMesh);
+    const leftPauldron = new THREE.Mesh(pauldronGeo, beltMat);
+    leftPauldron.position.set(0, 0.02, 0);
+    this.leftArm.add(leftPauldron);
     this.torsoGroup.add(this.leftArm);
 
     this.rightArm = new THREE.Group();
-    this.rightArm.position.set(0.32, 0.2, 0);
+    this.rightArm.position.set(0.31, 0.2, 0);
     const rightArmMesh = new THREE.Mesh(armGeo, this.tunicMat);
     rightArmMesh.castShadow = true;
     this.rightArm.add(rightArmMesh);
+    const rightPauldron = new THREE.Mesh(pauldronGeo, beltMat);
+    rightPauldron.position.set(0, 0.02, 0);
+    this.rightArm.add(rightPauldron);
     this.torsoGroup.add(this.rightArm);
 
-    // Legs
-    const legGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.6, 8);
-    legGeo.translate(0, -0.3, 0);
+    // --- 5. Legs & Adventurer Boots ---
+    const legGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.34, 8);
+    legGeo.translate(0, -0.15, 0);
+
+    const bootGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.34, 8);
+    bootGeo.translate(0, -0.16, 0);
 
     this.leftLeg = new THREE.Group();
-    this.leftLeg.position.set(-0.14, 0.6, 0);
-    const leftLegMesh = new THREE.Mesh(legGeo, this.tunicMat);
-    leftLegMesh.castShadow = true;
-    this.leftLeg.add(leftLegMesh);
+    this.leftLeg.position.set(-0.13, 0.6, 0);
+    const leftThigh = new THREE.Mesh(legGeo, this.tunicMat);
+    leftThigh.castShadow = true;
+    this.leftLeg.add(leftThigh);
+    const leftBoot = new THREE.Mesh(bootGeo, this.bootsMat);
+    leftBoot.position.set(0, -0.28, 0);
+    leftBoot.castShadow = true;
+    this.leftLeg.add(leftBoot);
     this.visualGroup.add(this.leftLeg);
 
     this.rightLeg = new THREE.Group();
-    this.rightLeg.position.set(0.14, 0.6, 0);
-    const rightLegMesh = new THREE.Mesh(legGeo, this.tunicMat);
-    rightLegMesh.castShadow = true;
-    this.rightLeg.add(rightLegMesh);
+    this.rightLeg.position.set(0.13, 0.6, 0);
+    const rightThigh = new THREE.Mesh(legGeo, this.tunicMat);
+    rightThigh.castShadow = true;
+    this.rightLeg.add(rightThigh);
+    const rightBoot = new THREE.Mesh(bootGeo, this.bootsMat);
+    rightBoot.position.set(0, -0.28, 0);
+    rightBoot.castShadow = true;
+    this.rightLeg.add(rightBoot);
     this.visualGroup.add(this.rightLeg);
 
-    // Flowing Cape (Back of torso: local -Z)
-    const capeGeo = new THREE.PlaneGeometry(0.5, 0.85, 4, 4);
+    // --- 6. Flowing Cape (Back of torso: local -Z) ---
+    const capeGeo = new THREE.PlaneGeometry(0.54, 0.88, 6, 6);
     capeGeo.translate(0, -0.42, 0);
     this.capeMesh = new THREE.Mesh(capeGeo, this.capeMat);
     this.capeMesh.position.set(0, 0.22, -0.16);
@@ -222,12 +359,12 @@ export class LunaCharacter {
 
     this.visualGroup.add(this.torsoGroup);
 
-    // Shield Bubble (Protective moonlight barrier around character)
-    const shieldGeo = new THREE.SphereGeometry(1.1, 24, 24);
+    // --- 7. Iridescent Moonlight Shield Bubble ---
+    const shieldGeo = new THREE.SphereGeometry(1.12, 24, 24);
     const shieldMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.38,
       wireframe: true
     });
     this.shieldBubble = new THREE.Mesh(shieldGeo, shieldMat);
@@ -235,22 +372,21 @@ export class LunaCharacter {
     this.shieldBubble.visible = false;
     this.mesh.add(this.shieldBubble);
 
-    // Magic Lunar Footsteps Trail Particles (Sparkles behind feet)
-    const trailCount = 24;
+    // --- 8. Magic Lunar Footsteps Trail Particles ---
+    const trailCount = 28;
     this.trailPositions = new Float32Array(trailCount * 3);
     const trailGeo = new THREE.BufferGeometry();
     trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPositions, 3));
     const trailMat = new THREE.PointsMaterial({
       color: 0x38bdf8,
-      size: 0.16,
+      size: 0.18,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.8
     });
     this.magicTrailPoints = new THREE.Points(trailGeo, trailMat);
     this.mesh.add(this.magicTrailPoints);
 
     // Default orientation: Running forward into -Z world!
-    // Since local +Z is Luna's front chest, rotating visualGroup by Math.PI makes Luna face -Z!
     this.visualGroup.rotation.y = Math.PI;
   }
 
@@ -260,11 +396,24 @@ export class LunaCharacter {
     const preset = COSTUME_PRESETS[costumeId] || COSTUME_PRESETS.default;
     this.currentCostumeId = preset.id;
 
+    // Update base colors
     this.hairMat.color.setHex(preset.hairColor);
     this.tunicMat.color.setHex(preset.tunicColor);
     this.capeMat.color.setHex(preset.capeColor);
     this.pendantMat.color.setHex(preset.accentColor);
+    this.pendantMat.emissive.setHex(preset.accentColor);
     this.glowMat.color.setHex(preset.glowColor);
+
+    // Generate & update dynamic fabric & eye textures
+    const fabricTex = TextureGenerator.createCostumeFabricTexture(preset.tunicHex, preset.trimHex);
+    this.tunicMat.map = fabricTex;
+    this.tunicMat.needsUpdate = true;
+    this.capeMat.map = fabricTex;
+    this.capeMat.needsUpdate = true;
+
+    const eyeTex = TextureGenerator.createEyeTexture(preset.eyeColor);
+    this.eyeMat.map = eyeTex;
+    this.eyeMat.needsUpdate = true;
   }
 
   // --- Controls & Lane Mechanics ---
@@ -427,9 +576,11 @@ export class LunaCharacter {
         this.torsoGroup.rotation.y = swing * 0.08;
         this.visualGroup.scale.set(1, 1, 1);
 
-        // Cape waving back towards camera (+Z in world, which is local -Z of visualGroup)
-        this.capeMesh.rotation.x = -0.45 - Math.sin(this.runAnimTime * 1.8) * 0.28;
-        this.ponytailMesh.rotation.x = -Math.PI * 0.68 - Math.sin(this.runAnimTime * 1.8) * 0.15;
+        // Cape and ponytail waving dynamically back towards camera (+Z world = local -Z)
+        const wind = Math.sin(this.runAnimTime * 1.8);
+        this.capeMesh.rotation.x = -0.45 - wind * 0.28;
+        this.ponytailMesh.rotation.x = -Math.PI * 0.68 - wind * 0.16;
+        this.ponytailSecondary.rotation.x = -Math.PI * 0.74 - wind * 0.22;
         break;
       }
 
@@ -439,6 +590,7 @@ export class LunaCharacter {
         this.leftArm.rotation.x = -1.6;
         this.rightArm.rotation.x = -1.6;
         this.capeMesh.rotation.x = -0.85;
+        this.ponytailMesh.rotation.x = -Math.PI * 0.55;
         this.torsoGroup.position.y = 0.9;
         break;
       }
@@ -449,6 +601,7 @@ export class LunaCharacter {
         this.leftArm.rotation.x = -0.8;
         this.rightArm.rotation.x = -0.8;
         this.capeMesh.rotation.x = -1.0;
+        this.ponytailMesh.rotation.x = -Math.PI * 0.85;
         break;
       }
 
@@ -522,6 +675,8 @@ export class LunaCharacter {
     const idleTime = Date.now() * 0.002;
     this.torsoGroup.position.y = 0.9 + Math.sin(idleTime) * 0.03;
     this.capeMesh.rotation.x = -0.2 + Math.sin(idleTime * 0.8) * 0.08;
+    this.ponytailMesh.rotation.x = -Math.PI * 0.68 + Math.sin(idleTime * 1.2) * 0.06;
+    this.ponytailSecondary.rotation.x = -Math.PI * 0.74 + Math.sin(idleTime * 1.2) * 0.08;
     this.leftArm.rotation.x = Math.sin(idleTime) * 0.05;
     this.rightArm.rotation.x = -Math.sin(idleTime) * 0.05;
   }

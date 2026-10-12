@@ -4,6 +4,8 @@ import { ObstaclePool, ObstacleInstance, ObstacleType } from './Obstacles';
 import { ShardManager } from './ShardManager';
 import { PatternManager } from './PatternManager';
 
+import { TextureGenerator } from '../render/TextureGenerator';
+
 export interface TrackChunk {
   mesh: THREE.Group;
   zCenter: number;
@@ -28,29 +30,44 @@ export class TrackManager {
   private nextChunkZ = 0;
   private nextPatternZ = -25; // First pattern begins 25m ahead of start
 
-  // Track Materials
-  private roadMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    roughness: 0.8,
-    metalness: 0.1
-  });
-
-  private laneBorderMat = new THREE.MeshBasicMaterial({
-    color: 0x38bdf8,
-    transparent: true,
-    opacity: 0.35
-  });
-
-  private pillarSideMat = new THREE.MeshStandardMaterial({
-    color: 0x334155,
-    roughness: 0.7
-  });
+  // Track Materials (High-detail procedural PBR & Cel lighting)
+  private roadMat: THREE.MeshStandardMaterial;
+  private laneBorderMat: THREE.MeshBasicMaterial;
+  private pillarSideMat: THREE.MeshStandardMaterial;
+  private lanternMat: THREE.MeshBasicMaterial;
 
   constructor(scene: THREE.Scene, shardManager: ShardManager) {
     this.scene = scene;
     this.shardManager = shardManager;
     this.patternManager = new PatternManager();
     this.obstaclePool = new ObstaclePool(scene);
+
+    const roadTex = TextureGenerator.createStoneRoadTexture();
+    const roadBump = TextureGenerator.createStoneBumpMap();
+    this.roadMat = new THREE.MeshStandardMaterial({
+      map: roadTex,
+      bumpMap: roadBump,
+      bumpScale: 0.08,
+      roughness: 0.75,
+      metalness: 0.15
+    });
+
+    this.laneBorderMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.65
+    });
+
+    const pillarTex = TextureGenerator.createRuinsStoneTexture();
+    this.pillarSideMat = new THREE.MeshStandardMaterial({
+      map: pillarTex,
+      roughness: 0.7,
+      metalness: 0.2
+    });
+
+    this.lanternMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8
+    });
   }
 
   public initTrack(): void {
@@ -84,13 +101,20 @@ export class TrackManager {
       group.add(lineMesh);
     });
 
-    // 3. Side Boundary Ancient Pillars
+    // 3. Side Boundary Ancient Pillars with Glowing Torch Crystals
     for (let z = -this.chunkLength / 2 + 5; z <= this.chunkLength / 2 - 5; z += 10) {
       [-trackWidth / 2 - 0.35, trackWidth / 2 + 0.35].forEach(sideX => {
         const pillarGeo = new THREE.CylinderGeometry(0.25, 0.32, 1.8, 8);
         const pillarMesh = new THREE.Mesh(pillarGeo, this.pillarSideMat);
         pillarMesh.position.set(sideX, 0.8, z);
+        pillarMesh.castShadow = true;
         group.add(pillarMesh);
+
+        // Glowing celestial lantern on top
+        const lanternGeo = new THREE.OctahedronGeometry(0.14, 0);
+        const lanternMesh = new THREE.Mesh(lanternGeo, this.lanternMat);
+        lanternMesh.position.set(sideX, 1.8, z);
+        group.add(lanternMesh);
       });
     }
 

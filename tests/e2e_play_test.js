@@ -58,6 +58,8 @@ async function run() {
   // 2. Test Main Menu & Costume Modal
   console.log('Checking Main Menu...');
   await page.waitForSelector('#btn-start-run', { timeout: 10000 });
+  await new Promise(r => setTimeout(r, 600)); // Allow 3D scene to render
+  await page.screenshot({ path: path.join(screenshotDir, '00_main_menu.png') });
   const startBtn = await page.$('#btn-start-run');
   if (!startBtn) throw new Error('Start button not found!');
 

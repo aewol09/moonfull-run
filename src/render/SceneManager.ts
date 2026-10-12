@@ -1,10 +1,15 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { GraphicsQuality } from '../core/StorageManager';
 
 export class SceneManager {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
   public renderer: THREE.WebGLRenderer;
+  public composer: EffectComposer | null = null;
+  private bloomPass: UnrealBloomPass | null = null;
   private container: HTMLElement;
   private currentQuality: GraphicsQuality = 'medium';
 
@@ -32,13 +37,38 @@ export class SceneManager {
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.15;
     this.container.appendChild(this.renderer.domElement);
+
+    // 4. Post-processing Composer
+    this.initPostProcessing();
 
     this.applyQuality(this.currentQuality);
     this.handleResize();
 
     window.addEventListener('resize', () => this.handleResize());
+  }
+
+  private initPostProcessing(): void {
+    try {
+      this.composer = new EffectComposer(this.renderer);
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
+
+      const width = this.container.clientWidth || window.innerWidth || 800;
+      const height = this.container.clientHeight || window.innerHeight || 600;
+
+      this.bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(width, height),
+        0.55, // strength
+        0.4,  // radius
+        0.72  // threshold: only bright highlights (moon, runes, shards, shield) glow
+      );
+      this.composer.addPass(this.bloomPass);
+    } catch (e) {
+      console.warn('Post-processing could not initialize, falling back to direct render:', e);
+      this.composer = null;
+    }
   }
 
   public applyQuality(quality: GraphicsQuality): void {
@@ -49,20 +79,33 @@ export class SceneManager {
       case 'low':
         pixelRatio = 1.0;
         this.renderer.shadowMap.enabled = false;
+        if (this.bloomPass) this.bloomPass.enabled = false;
         break;
       case 'medium':
-        pixelRatio = Math.min(window.devicePixelRatio, 1.35);
+        pixelRatio = Math.min(window.devicePixelRatio || 1, 1.35);
         this.renderer.shadowMap.enabled = false;
+        if (this.bloomPass) {
+          this.bloomPass.enabled = true;
+          this.bloomPass.strength = 0.45;
+        }
         break;
       case 'high':
-        pixelRatio = Math.min(window.devicePixelRatio, 2.0);
+        pixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        if (this.bloomPass) {
+          this.bloomPass.enabled = true;
+          this.bloomPass.strength = 0.65;
+        }
         break;
     }
 
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    if (this.composer) {
+      this.composer.setPixelRatio(pixelRatio);
+      this.composer.setSize(this.container.clientWidth, this.container.clientHeight);
+    }
   }
 
   public handleResize(): void {
@@ -71,9 +114,19 @@ export class SceneManager {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+    if (this.composer) {
+      this.composer.setSize(width, height);
+      if (this.bloomPass) {
+        this.bloomPass.resolution.set(width, height);
+      }
+    }
   }
 
   public render(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.currentQuality !== 'low' && this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 }

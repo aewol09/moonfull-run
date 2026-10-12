@@ -18,14 +18,15 @@ export class ShardManager {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    // Glowing celestial diamond/shard geometry
+    // Glowing celestial diamond/shard geometry (faceted crystal)
     this.shardGeo = new THREE.OctahedronGeometry(0.32, 0);
     this.shardMat = new THREE.MeshStandardMaterial({
-      color: 0xfbbf24,
-      emissive: 0xd97706,
-      emissiveIntensity: 0.8,
-      roughness: 0.2,
-      metalness: 0.8
+      color: 0xfef08a,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 1.2,
+      roughness: 0.15,
+      metalness: 0.85,
+      flatShading: true
     });
   }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LANE_WIDTH } from '../entities/LunaCharacter';
+import { TextureGenerator } from '../render/TextureGenerator';
 
 export enum ObstacleType {
   BROKEN_BRIDGE = 'BROKEN_BRIDGE',
@@ -43,10 +44,32 @@ export class ObstaclePool {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
 
-    this.pillarMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8, metalness: 0.1 });
-    this.archMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7, metalness: 0.2 });
-    this.platformMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.85 });
-    this.movingMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.35, metalness: 0.7 });
+    const stoneTex = TextureGenerator.createRuinsStoneTexture();
+    const crackedTex = TextureGenerator.createCrackedPlatformTexture();
+
+    this.pillarMat = new THREE.MeshStandardMaterial({
+      map: stoneTex,
+      roughness: 0.65,
+      metalness: 0.2
+    });
+    this.archMat = new THREE.MeshStandardMaterial({
+      map: stoneTex,
+      roughness: 0.65,
+      metalness: 0.25
+    });
+    this.platformMat = new THREE.MeshStandardMaterial({
+      map: crackedTex,
+      roughness: 0.7,
+      emissive: 0x881337,
+      emissiveIntensity: 0.4
+    });
+    this.movingMat = new THREE.MeshStandardMaterial({
+      color: 0x6366f1,
+      roughness: 0.25,
+      metalness: 0.8,
+      emissive: 0x4f46e5,
+      emissiveIntensity: 0.5
+    });
     this.runeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     this.chasmVoidMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
     this.chasmBorderMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
@@ -117,16 +140,31 @@ export class ObstaclePool {
     const height = 3.6;
     const depth = 1.2;
 
-    const geo = new THREE.BoxGeometry(width, height, depth);
-    const mesh = new THREE.Mesh(geo, this.pillarMat);
-    mesh.position.y = height / 2;
+    // 1. Base pedestal
+    const baseGeo = new THREE.BoxGeometry(width * 1.08, 0.45, depth * 1.08);
+    const baseMesh = new THREE.Mesh(baseGeo, this.pillarMat);
+    baseMesh.position.y = 0.225;
+    baseMesh.castShadow = true;
+    group.add(baseMesh);
+
+    // 2. Main column body
+    const bodyGeo = new THREE.BoxGeometry(width, height - 0.85, depth);
+    const mesh = new THREE.Mesh(bodyGeo, this.pillarMat);
+    mesh.position.y = (height - 0.85) / 2 + 0.45;
     mesh.castShadow = true;
     group.add(mesh);
 
-    // Glowing ancient rune carving
-    const runeGeo = new THREE.PlaneGeometry(0.8, 1.4);
+    // 3. Top capital entablature
+    const topGeo = new THREE.BoxGeometry(width * 1.12, 0.4, depth * 1.12);
+    const topMesh = new THREE.Mesh(topGeo, this.pillarMat);
+    topMesh.position.y = height - 0.2;
+    topMesh.castShadow = true;
+    group.add(topMesh);
+
+    // 4. Glowing ancient rune carving
+    const runeGeo = new THREE.PlaneGeometry(0.85, 1.5);
     const runeMesh = new THREE.Mesh(runeGeo, this.runeMat);
-    runeMesh.position.set(0, height * 0.55, depth / 2 + 0.02);
+    runeMesh.position.set(0, height * 0.52, depth / 2 + 0.02);
     group.add(runeMesh);
 
     return {
@@ -279,18 +317,40 @@ export class ObstaclePool {
     const height = 2.8;
     const depth = 1.2;
 
-    const geo = new THREE.BoxGeometry(width, height, depth);
-    const mesh = new THREE.Mesh(geo, this.movingMat);
-    mesh.position.y = height / 2;
-    mesh.castShadow = true;
-    group.add(mesh);
+    // 1. Central Core Mesh
+    const coreGeo = new THREE.OctahedronGeometry(0.55, 0);
+    const coreMat = new THREE.MeshStandardMaterial({
+      color: 0xc084fc,
+      emissive: 0x9333ea,
+      emissiveIntensity: 0.9,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    coreMesh.position.y = height / 2;
+    group.add(coreMesh);
 
-    // Glowing core crystal
-    const coreGeo = new THREE.OctahedronGeometry(0.5);
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    core.position.y = height / 2;
-    group.add(core);
+    // 2. Concentric Orbiting Rune Rings
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x818cf8, wireframe: true });
+    const ring1Geo = new THREE.TorusGeometry(0.85, 0.04, 8, 24);
+    const ring1 = new THREE.Mesh(ring1Geo, ringMat);
+    ring1.position.y = height / 2;
+    ring1.rotation.x = Math.PI / 4;
+    group.add(ring1);
+
+    const ring2Geo = new THREE.TorusGeometry(1.05, 0.03, 8, 24);
+    const ring2 = new THREE.Mesh(ring2Geo, ringMat);
+    ring2.position.y = height / 2;
+    ring2.rotation.y = Math.PI / 3;
+    group.add(ring2);
+
+    // 3. Floating Sentinel Obelisk Wings
+    [-0.7, 0.7].forEach(wingX => {
+      const wingGeo = new THREE.ConeGeometry(0.25, 1.4, 4);
+      const wingMesh = new THREE.Mesh(wingGeo, this.movingMat);
+      wingMesh.position.set(wingX, height / 2, 0);
+      group.add(wingMesh);
+    });
 
     return {
       type: ObstacleType.MOVING_OBSTACLE,
