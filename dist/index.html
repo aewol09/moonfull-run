@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070a14" />
+  <title>Moonfall Run - 문폴 런</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-CRBsZE8t.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-flcKpYW7.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- 1. Main Menu Screen -->
+      <div id="main-menu" class="screen-view active">
+        <div class="menu-top-bar">
+          <div class="currency-badge">
+            <span class="shard-icon">🌙</span>
+            <span id="menu-coin-count">0</span>
+          </div>
+        </div>
+        <div class="title-container">
+          <div class="title-sub">ANCIENT CELESTIAL ODYSSEY</div>
+          <h1 class="game-logo">MOONFALL<span>RUN</span></h1>
+          <p class="title-desc">달빛의 소녀 루나와 함께하는 3D 무한 질주</p>
+        </div>
+        <div class="menu-actions">
+          <button id="btn-start-run" class="btn btn-primary pulse">
+            <span class="btn-glow"></span>
+            달리기 시작
+          </button>
+          <div class="menu-sub-actions">
+            <button id="btn-open-shop" class="btn btn-secondary">
+              <span>🔮 성장 & 상점</span>
+            </button>
+            <button id="btn-open-settings" class="btn btn-secondary">
+              <span>⚙️ 설정</span>
+            </button>
+          </div>
+        </div>
+        <div class="controls-guide">
+          <span>스와이프 / 방향키 (A·D: 이동, W: 점프, S: 슬라이딩)</span>
+        </div>
+      </div>
+
+      <!-- 2. Gameplay In-Game HUD -->
+      <div id="game-hud" class="screen-view">
+        <div class="hud-top">
+          <div class="hud-stat hud-score">
+            <span class="hud-label">SCORE</span>
+            <span id="hud-score-val" class="hud-value">0</span>
+          </div>
+          <div class="hud-center">
+            <div class="hud-stat hud-distance">
+              <span id="hud-dist-val" class="hud-value">0</span>
+              <span class="hud-unit">m</span>
+            </div>
+          </div>
+          <div class="hud-right">
+            <div class="currency-badge hud-currency">
+              <span class="shard-icon">🌙</span>
+              <span id="hud-coin-val">0</span>
+            </div>
+            <button id="btn-pause" class="btn-icon" aria-label="일시정지">
+              <span>⏸</span>
+            </button>
+          </div>
+        </div>
+        <!-- Active Buffs & Powerups Indicators -->
+        <div id="hud-buffs" class="hud-buffs-container">
+          <div id="buff-shield" class="buff-item hidden">
+            <span class="buff-icon">🛡️</span>
+            <span class="buff-name">보호막</span>
+          </div>
+          <div id="buff-magnet" class="buff-item hidden">
+            <span class="buff-icon">🧲</span>
+            <div class="buff-gauge-wrap">
+              <div id="buff-magnet-gauge" class="buff-gauge"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Pause Modal -->
+      <div id="pause-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2 class="modal-title">일시 정지</h2>
+          <div class="pause-stats">
+            <div>현재 거리: <strong id="pause-dist">0m</strong></div>
+            <div>현재 점수: <strong id="pause-score">0</strong></div>
+            <div>획득 파편: <strong id="pause-coins">0</strong></div>
+          </div>
+          <div class="modal-buttons">
+            <button id="btn-resume" class="btn btn-primary">계속하기</button>
+            <button id="btn-restart-pause" class="btn btn-secondary">다시 시작</button>
+            <button id="btn-main-pause" class="btn btn-danger">메인 화면으로</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Game Over Modal -->
+      <div id="gameover-modal" class="modal-overlay hidden">
+        <div class="modal-card gameover-card">
+          <div id="new-record-badge" class="badge-new-record hidden">NEW RECORD!</div>
+          <h2 class="modal-title text-red">여정의 끝</h2>
+          <div class="gameover-stats">
+            <div class="stat-row highlight">
+              <span>최종 점수</span>
+              <strong id="go-score">0</strong>
+            </div>
+            <div class="stat-row">
+              <span>달린 거리</span>
+              <strong id="go-dist">0 m</strong>
+            </div>
+            <div class="stat-row">
+              <span>수집한 달의 파편</span>
+              <strong id="go-coins">0</strong>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-row text-muted">
+              <span>최고 기록</span>
+              <strong id="go-best-score">0</strong>
+            </div>
+            <div class="stat-row text-muted">
+              <span>최고 거리</span>
+              <strong id="go-best-dist">0 m</strong>
+            </div>
+          </div>
+          <div class="modal-buttons">
+            <button id="btn-restart-go" class="btn btn-primary pulse">다시 달리기</button>
+            <button id="btn-main-go" class="btn btn-secondary">메인 화면으로</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Shop & Growth Modal -->
+      <div id="shop-modal" class="modal-overlay hidden">
+        <div class="modal-card shop-card">
+          <div class="modal-header">
+            <h2 class="modal-title">달의 신전 (성장 & 상점)</h2>
+            <div class="currency-badge">
+              <span class="shard-icon">🌙</span>
+              <span id="shop-coin-count">0</span>
+            </div>
+          </div>
+          <div class="shop-tabs">
+            <button id="tab-upgrades" class="shop-tab active">성장 업그레이드</button>
+            <button id="tab-rewards" class="shop-tab">무료 보상 & 팩</button>
+          </div>
+
+          <!-- Tab Content 1: Upgrades -->
+          <div id="shop-content-upgrades" class="shop-tab-content active">
+            <!-- Magnet Upgrade -->
+            <div class="upgrade-item" id="item-magnet">
+              <div class="item-icon-box">🧲</div>
+              <div class="item-info">
+                <div class="item-title">코인 자석 <span class="item-lvl" id="lvl-magnet">Lv.1</span></div>
+                <div class="item-desc">주변 달의 파편을 강하게 끌어당깁니다. (지속시간 및 반경 증가)</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-magnet" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-magnet">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-magnet">100</span>
+              </button>
+            </div>
+
+            <!-- Shield Upgrade -->
+            <div class="upgrade-item" id="item-shield">
+              <div class="item-icon-box">🛡️</div>
+              <div class="item-info">
+                <div class="item-title">달빛 보호막 <span class="item-lvl" id="lvl-shield">Lv.1</span></div>
+                <div class="item-desc">장애물 충돌을 1회 방어합니다. (레벨업 시 쿨다운 재생성)</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-shield" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-shield">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-shield">150</span>
+              </button>
+            </div>
+
+            <!-- Headstart Upgrade -->
+            <div class="upgrade-item" id="item-headstart">
+              <div class="item-icon-box">⚡</div>
+              <div class="item-info">
+                <div class="item-title">시작 보너스 <span class="item-lvl" id="lvl-headstart">Lv.1</span></div>
+                <div class="item-desc">시작 시 즉시 추가 거리 부스트와 보너스 코인을 획득합니다.</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-headstart" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-headstart">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-headstart">100</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content 2: Rewards & Mock IAP -->
+          <div id="shop-content-rewards" class="shop-tab-content">
+            <div class="reward-box">
+              <div class="reward-icon">🎁</div>
+              <div class="reward-info">
+                <div class="reward-title">보상형 마법 축복 (광고 시청)</div>
+                <div class="reward-desc">달빛의 축복 영상을 시청하고 즉시 100 파편을 얻습니다.</div>
+              </div>
+              <button id="btn-watch-ad" class="btn btn-secondary">시청 (+100 🌙)</button>
+            </div>
+            <div class="reward-box">
+              <div class="reward-icon">✨</div>
+              <div class="reward-info">
+                <div class="reward-title">루나 스타터 팩 (인앱 결제)</div>
+                <div class="reward-desc">달의 파편 1,000개와 수호자의 축복을 획득합니다.</div>
+              </div>
+              <button id="btn-buy-starter" class="btn btn-primary">구매 (+1000 🌙)</button>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button id="btn-close-shop" class="btn btn-secondary">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Settings Modal -->
+      <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-card settings-card">
+          <h2 class="modal-title">환경 설정</h2>
+          <div class="settings-list">
+            <div class="setting-row">
+              <span>배경 음악 (BGM)</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-bgm" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <span>효과음 (SFX)</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-sfx" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <span>햅틱 진동</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-vibrate" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="divider"></div>
+            <div class="setting-row-vertical">
+              <span>그래픽 품질 (모바일 최적화)</span>
+              <div class="quality-selector">
+                <button class="btn-quality" data-quality="low">낮음</button>
+                <button class="btn-quality active" data-quality="medium">보통</button>
+                <button class="btn-quality" data-quality="high">높음</button>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="setting-row">
+              <span>설정 초기화</span>
+              <button id="btn-reset-settings" class="btn btn-danger-sm">초기화</button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="btn-close-settings" class="btn btn-primary">확인</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast / Floating Messages -->
+      <div id="toast-container" class="toast-container"></div>
+    </div>
+  </div>
+</body>
+</html>
