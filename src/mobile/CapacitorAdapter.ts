@@ -20,7 +20,7 @@ export class CapacitorAdapter {
         this.stateManager.setState(GameState.PAUSED);
       }
     }).catch(err => {
-      console.warn('Moonfall Run: Capacitor App listener not available in web context', err);
+      console.warn('Moonfull Run: Capacitor App listener not available in web context', err);
     });
 
     // 2. Android Hardware Back Button Handling

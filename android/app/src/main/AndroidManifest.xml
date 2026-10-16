@@ -35,10 +35,10 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- Google AdMob Application ID (공식 테스트 ID: 출시 시 실제 본인 AdMob App ID로 변경 가능) -->
+        <!-- Google AdMob Application ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3719896316126650~1876353630" />
     </application>
 
     <!-- Permissions -->

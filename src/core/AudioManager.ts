@@ -32,7 +32,7 @@ export class AudioManager {
       this.sfxGain.gain.value = this.isSfxEnabled ? 0.6 : 0;
       this.sfxGain.connect(this.ctx.destination);
     } catch (e) {
-      console.warn('Moonfall Run: Web Audio API not supported', e);
+      console.warn('Moonfull Run: Web Audio API not supported', e);
     }
   }
 

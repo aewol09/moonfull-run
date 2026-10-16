@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.moonfull.run',
-  appName: 'Moonfall Run',
+  appName: 'Moonfull Run',
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {

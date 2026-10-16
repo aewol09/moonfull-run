@@ -36,8 +36,8 @@ export interface AdMobConfig {
  * 배포 시 실제 AdMob 콘솔에서 발급받은 단위 ID로 교체하거나 setConfig()로 주입할 수 있습니다.
  */
 export const DEFAULT_ADMOB_CONFIG: AdMobConfig = {
-  isTesting: true,
-  rewardedAdId: 'ca-app-pub-3940256099942544/5224354917',
+  isTesting: false,
+  rewardedAdId: 'ca-app-pub-3719896316126650/5776904341',
   interstitialAdId: 'ca-app-pub-3940256099942544/1033173712',
   bannerAdId: 'ca-app-pub-3940256099942544/6300978111',
 };

@@ -11,10 +11,10 @@ describe('AdMobService', () => {
     adMobService = new AdMobService();
   });
 
-  it('should initialize with default test config and official Google AdMob test IDs', () => {
+  it('should initialize with default config and configured AdMob IDs', () => {
     const config = adMobService.getConfig();
-    expect(config.isTesting).toBe(true);
-    expect(config.rewardedAdId).toBe('ca-app-pub-3940256099942544/5224354917');
+    expect(config.isTesting).toBe(false);
+    expect(config.rewardedAdId).toBe('ca-app-pub-3719896316126650/5776904341');
     expect(config.interstitialAdId).toBe('ca-app-pub-3940256099942544/1033173712');
     expect(config.bannerAdId).toBe('ca-app-pub-3940256099942544/6300978111');
   });

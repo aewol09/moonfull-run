@@ -8,7 +8,7 @@ export interface TurnEvent {
 const isVitest = Boolean(typeof process !== 'undefined' && process.env?.VITEST);
 
 /**
- * Manages authentic 90-degree Temple Run corner turns in Moonfall Run.
+ * Manages authentic 90-degree Temple Run corner turns in Moonfull Run.
  * When approaching and turning a corner:
  * 1. Physical 90-degree corner elbow road mesh connects the current track to the perpendicular track.
  * 2. Character sweeps through the 90° circular arc and physically rotates sideways into the turn.

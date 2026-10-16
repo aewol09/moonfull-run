@@ -508,7 +508,8 @@ const DEFAULT_DATA: SaveData = {
   purchasedCashPackages: []
 };
 
-const STORAGE_KEY = 'MOONFALL_RUN_SAVE_DATA_V1';
+const STORAGE_KEY = 'MOONFULL_RUN_SAVE_DATA_V1';
+const LEGACY_STORAGE_KEY = 'MOONFALL_RUN_SAVE_DATA_V1';
 
 export class StorageManager {
   private data: SaveData;
@@ -523,7 +524,7 @@ export class StorageManager {
 
   public load(): SaveData {
     try {
-      const serialized = localStorage.getItem(STORAGE_KEY);
+      const serialized = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (!serialized) {
         return JSON.parse(JSON.stringify(DEFAULT_DATA));
       }
@@ -678,7 +679,7 @@ export class StorageManager {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
       return true;
     } catch (e) {
-      console.warn('Moonfall Run: Failed to save to localStorage', e);
+      console.warn('Moonfull Run: Failed to save to localStorage', e);
       return false;
     }
   }
