@@ -50,6 +50,10 @@ export class SceneManager {
   }
 
   private initPostProcessing(): void {
+    if (!this.renderer || typeof (this.renderer as unknown as { getSize?: () => unknown }).getSize !== 'function') {
+      this.composer = null;
+      return;
+    }
     try {
       this.composer = new EffectComposer(this.renderer);
       const renderPass = new RenderPass(this.scene, this.camera);

@@ -36,10 +36,56 @@ export class UpgradeManager {
     return 70 - lvl * 10; // Lv2: 50s, Lv3: 40s, Lv4: 30s, Lv5: 20s
   }
 
+  // Coin Shard Bonus Multiplier (Lv1: 1.0x, Lv5: 2.0x)
+  public getCoinMultiplier(): number {
+    const lvl = this.storage.getData().upgrades.coinBonus;
+    return 1.0 + (lvl - 1) * 0.25;
+  }
+
+  // Starlight Fever Boost (Lv1: 5.0s & 1.5x, Lv5: 9.0s & 2.5x)
+  public getFeverDuration(): number {
+    const lvl = this.storage.getData().upgrades.feverBoost;
+    return 5.0 + (lvl - 1) * 1.0;
+  }
+
+  public getFeverScoreMultiplier(): number {
+    const lvl = this.storage.getData().upgrades.feverBoost;
+    return 1.5 + (lvl - 1) * 0.25;
+  }
+
+  // Revive Mechanic: Unlocks at Lv 2 (1 free second-chance revive per run)
+  private hasUsedReviveInRun = false;
+
+  public canRevive(): boolean {
+    const lvl = this.storage.getData().upgrades.revive;
+    return lvl >= 2 && !this.hasUsedReviveInRun;
+  }
+
+  // Skill Mastery: Reduces active skill cooldown by up to 50%
+  public getSkillCooldownMultiplier(): number {
+    const lvl = this.storage.getData().upgrades.skillMastery;
+    return Math.max(0.5, 1.0 - (lvl - 1) * 0.025);
+  }
+
+  // Lucky Chest: Increases in-game mystery chest spawn rate
+  public getChestSpawnMultiplier(): number {
+    const lvl = this.storage.getData().upgrades.luckyChest;
+    return 1.0 + (lvl - 1) * 0.05;
+  }
+
+  public useRevive(): boolean {
+    if (this.canRevive()) {
+      this.hasUsedReviveInRun = true;
+      return true;
+    }
+    return false;
+  }
+
   public applyStartBuffs(luna: LunaCharacter, scoreSystem: ScoreSystem): void {
     // 1. Initial Shield
     luna.setShieldActive(true);
     this.shieldCooldown = 0;
+    this.hasUsedReviveInRun = false;
 
     // 2. Start Bonus
     const bonus = this.getHeadStartBonus();

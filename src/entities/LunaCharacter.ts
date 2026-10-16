@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { TextureGenerator } from '../render/TextureGenerator';
+import { AssetLoader } from '../render/AssetLoader';
+import { SkillFXManager } from '../render/SkillFXManager';
 
 export enum CharacterState {
   RUN = 'RUN',
@@ -75,8 +76,9 @@ export const COSTUME_PRESETS: Record<string, CostumeDef> = {
 
 export class LunaCharacter {
   public mesh: THREE.Group;
-  public visualGroup: THREE.Group; // Group rotated Math.PI in run mode so face points -Z
+  public visualGroup: THREE.Group;
   public state: CharacterState = CharacterState.RUN;
+  public isTurningCorner = false;
 
   // Lane position: -1 (Left), 0 (Center), 1 (Right)
   public currentLane = 0;
@@ -86,53 +88,61 @@ export class LunaCharacter {
   // Vertical physics
   public posY = 0;
   public velocityY = 0;
+  public isFallingIntoPit = false;
   private readonly gravity = -34.0;
   private readonly jumpForce = 11.5;
 
-  // Slide state
+  // Slide & Land state timers
   private slideTimer = 0;
   private readonly slideDuration = 0.65; // seconds
+  private landTimer = 0;
 
   // Death sequence timer
   public deathTimer = 0;
   public readonly deathDuration = 1.0; // seconds before game over modal triggers
 
-  // Procedural 3D Mesh joints
-  private headGroup: THREE.Group;
-  private torsoGroup: THREE.Group;
-  private leftArm: THREE.Group;
-  private rightArm: THREE.Group;
-  private leftLeg: THREE.Group;
-  private rightLeg: THREE.Group;
-  private capeMesh: THREE.Mesh;
-  private hairMesh: THREE.Mesh;
-  private ponytailMesh: THREE.Mesh;
-  private ponytailSecondary: THREE.Mesh;
-  private torsoMesh: THREE.Mesh;
-  private pendantMesh: THREE.Mesh;
+  // 2.5D High-Res Billboard Sprite Assets & Action Sets
+  public isFeverMode = false;
+  public currentCharacterId = 'luna';
+  public skillCooldownRemaining = 0;
+  public isSkillActive = false;
+  public skillActiveTimeRemaining = 0;
+  public isSlashWaveActive = false;
+  public slashWaveZ = 0;
+  public slashWaveMesh: THREE.Mesh;
+  public skillFX: SkillFXManager;
+
+  private costumeSpriteSets: Record<string, {
+    runF1: THREE.Texture;
+    runF2: THREE.Texture;
+    runF3: THREE.Texture;
+    runF4: THREE.Texture;
+    jump: THREE.Texture;
+    slide: THREE.Texture;
+    front: THREE.Texture;
+  }>;
+  private spriteMat: THREE.MeshBasicMaterial;
+  private spriteMesh: THREE.Mesh;
+  private shadowMesh: THREE.Mesh;
+  private shadowMat: THREE.MeshBasicMaterial;
+
+  // Visual FX
   private shieldBubble: THREE.Mesh;
+  private shieldRingMat!: THREE.MeshBasicMaterial;
+  private shieldOuterMat!: THREE.MeshBasicMaterial;
+  private shieldDomeMat!: THREE.MeshBasicMaterial;
+  private shieldOrbsGroup!: THREE.Group;
+  private shieldOrbMats: THREE.MeshBasicMaterial[] = [];
   private magicTrailPoints: THREE.Points;
   private trailPositions: Float32Array;
 
-  // Face Elements
-  private leftEyeMesh: THREE.Mesh;
-  private rightEyeMesh: THREE.Mesh;
-
-  // Shared Materials for costume switching
-  private hairMat: THREE.MeshStandardMaterial;
-  private tunicMat: THREE.MeshStandardMaterial;
-  private capeMat: THREE.MeshStandardMaterial;
-  private pendantMat: THREE.MeshStandardMaterial;
-  private glowMat: THREE.MeshBasicMaterial;
-  private bootsMat: THREE.MeshStandardMaterial;
-  private skinMat: THREE.MeshStandardMaterial;
-  private eyeMat: THREE.MeshBasicMaterial;
-
   // Animation clocks & flags
   private runAnimTime = 0;
+  private isMenuMode = true;
   public hasShield = false;
   public magnetTimeRemaining = 0;
   public currentCostumeId = 'default';
+  public cameraYaw = 0;
 
   constructor() {
     this.mesh = new THREE.Group();
@@ -141,279 +151,408 @@ export class LunaCharacter {
     this.visualGroup = new THREE.Group();
     this.mesh.add(this.visualGroup);
 
-    // Initial default materials with procedural fabric textures
-    const preset = COSTUME_PRESETS.default;
-    const fabricTex = TextureGenerator.createCostumeFabricTexture(preset.tunicHex, preset.trimHex);
-    const eyeTex = TextureGenerator.createEyeTexture(preset.eyeColor);
+    // 1. Load Multi-Frame Action Sprite Sets for all Characters & Costumes
+    this.costumeSpriteSets = {
+      default: {
+        runF1: AssetLoader.loadTexture('/assets/luna_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide.png'),
+        front: AssetLoader.loadTexture('/assets/luna_front.png')
+      },
+      luna_default: {
+        runF1: AssetLoader.loadTexture('/assets/luna_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide.png'),
+        front: AssetLoader.loadTexture('/assets/luna_front.png')
+      },
+      guardian: {
+        runF1: AssetLoader.loadTexture('/assets/luna_guardian_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_guardian_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_guardian_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_guardian_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump_guardian.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide_guardian.png'),
+        front: AssetLoader.loadTexture('/assets/luna_guardian.png')
+      },
+      luna_guardian: {
+        runF1: AssetLoader.loadTexture('/assets/luna_guardian_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_guardian_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_guardian_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_guardian_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump_guardian.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide_guardian.png'),
+        front: AssetLoader.loadTexture('/assets/luna_guardian.png')
+      },
+      dawn: {
+        runF1: AssetLoader.loadTexture('/assets/luna_dawn_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_dawn_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_dawn_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_dawn_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump_dawn.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide_dawn.png'),
+        front: AssetLoader.loadTexture('/assets/luna_dawn.png')
+      },
+      luna_dawn: {
+        runF1: AssetLoader.loadTexture('/assets/luna_dawn_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/luna_dawn_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/luna_dawn_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/luna_dawn_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/luna_jump_dawn.png'),
+        slide: AssetLoader.loadTexture('/assets/luna_slide_dawn.png'),
+        front: AssetLoader.loadTexture('/assets/luna_dawn.png')
+      },
+      stella: {
+        runF1: AssetLoader.loadTexture('/assets/stella_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/stella_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/stella_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/stella_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/stella_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/stella_slide.png'),
+        front: AssetLoader.loadTexture('/assets/stella_front.png')
+      },
+      stella_default: {
+        runF1: AssetLoader.loadTexture('/assets/stella_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/stella_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/stella_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/stella_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/stella_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/stella_slide.png'),
+        front: AssetLoader.loadTexture('/assets/stella_front.png')
+      },
+      stella_archmage: {
+        runF1: AssetLoader.loadTexture('/assets/stella_archmage_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/stella_archmage_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/stella_archmage_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/stella_archmage_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/stella_archmage_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/stella_archmage_slide.png'),
+        front: AssetLoader.loadTexture('/assets/stella_archmage_front.png')
+      },
+      solaris: {
+        runF1: AssetLoader.loadTexture('/assets/solaris_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/solaris_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/solaris_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/solaris_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/solaris_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/solaris_slide.png'),
+        front: AssetLoader.loadTexture('/assets/solaris_front.png')
+      },
+      solaris_default: {
+        runF1: AssetLoader.loadTexture('/assets/solaris_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/solaris_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/solaris_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/solaris_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/solaris_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/solaris_slide.png'),
+        front: AssetLoader.loadTexture('/assets/solaris_front.png')
+      },
+      solaris_obsidian: {
+        runF1: AssetLoader.loadTexture('/assets/solaris_obsidian_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/solaris_obsidian_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/solaris_obsidian_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/solaris_obsidian_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/solaris_obsidian_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/solaris_obsidian_slide.png'),
+        front: AssetLoader.loadTexture('/assets/solaris_obsidian_front.png')
+      },
+      solaris_phoenix: {
+        runF1: AssetLoader.loadTexture('/assets/solaris_phoenix_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/solaris_phoenix_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/solaris_phoenix_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/solaris_phoenix_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/solaris_phoenix_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/solaris_phoenix_slide.png'),
+        front: AssetLoader.loadTexture('/assets/solaris_phoenix_front.png')
+      },
+      nyx: {
+        runF1: AssetLoader.loadTexture('/assets/nyx_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/nyx_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/nyx_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/nyx_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/nyx_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/nyx_slide.png'),
+        front: AssetLoader.loadTexture('/assets/nyx_front.png')
+      },
+      nyx_default: {
+        runF1: AssetLoader.loadTexture('/assets/nyx_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/nyx_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/nyx_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/nyx_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/nyx_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/nyx_slide.png'),
+        front: AssetLoader.loadTexture('/assets/nyx_front.png')
+      },
+      nyx_cyber: {
+        runF1: AssetLoader.loadTexture('/assets/nyx_cyber_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/nyx_cyber_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/nyx_cyber_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/nyx_cyber_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/nyx_cyber_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/nyx_cyber_slide.png'),
+        front: AssetLoader.loadTexture('/assets/nyx_cyber_front.png')
+      },
+      nyx_bloodmoon: {
+        runF1: AssetLoader.loadTexture('/assets/nyx_bloodmoon_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/nyx_bloodmoon_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/nyx_bloodmoon_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/nyx_bloodmoon_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/nyx_bloodmoon_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/nyx_bloodmoon_slide.png'),
+        front: AssetLoader.loadTexture('/assets/nyx_bloodmoon_front.png')
+      },
+      stella_chronos: {
+        runF1: AssetLoader.loadTexture('/assets/stella_chronos_run_f1.png'),
+        runF2: AssetLoader.loadTexture('/assets/stella_chronos_run_f2.png'),
+        runF3: AssetLoader.loadTexture('/assets/stella_chronos_run_f3.png'),
+        runF4: AssetLoader.loadTexture('/assets/stella_chronos_run_f4.png'),
+        jump: AssetLoader.loadTexture('/assets/stella_chronos_jump.png'),
+        slide: AssetLoader.loadTexture('/assets/stella_chronos_slide.png'),
+        front: AssetLoader.loadTexture('/assets/stella_chronos_front.png')
+      }
+    };
 
-    this.skinMat = new THREE.MeshStandardMaterial({
-      color: 0xffedd5,
-      roughness: 0.5,
-      metalness: 0.05
-    });
+    // Character-Specific and Skin-Specific Dynamic 3D Skill Effects Manager
+    this.skillFX = new SkillFXManager();
+    this.mesh.add(this.skillFX.rootGroup);
+    this.slashWaveMesh = this.skillFX.slashWaveMesh;
 
-    this.hairMat = new THREE.MeshStandardMaterial({
-      color: preset.hairColor,
-      roughness: 0.35,
-      metalness: 0.25
-    });
+    // 2. 2.5D Billboard Sprite Material & Quad Mesh
+    // Height 2.1m, width 1.55m, anchored so bottom edge rests on road (y = 0)
+    const spriteGeo = new THREE.PlaneGeometry(1.55, 2.1);
+    spriteGeo.translate(0, 1.05, 0);
 
-    this.tunicMat = new THREE.MeshStandardMaterial({
-      map: fabricTex,
-      color: preset.tunicColor,
-      roughness: 0.6,
-      metalness: 0.15
-    });
-
-    this.capeMat = new THREE.MeshStandardMaterial({
-      map: fabricTex,
-      color: preset.capeColor,
+    this.spriteMat = new THREE.MeshBasicMaterial({
+      map: this.costumeSpriteSets.default.front,
+      transparent: true,
+      alphaTest: 0.08,
       side: THREE.DoubleSide,
-      roughness: 0.65,
-      metalness: 0.2
+      depthWrite: true,
+      fog: false
     });
+    this.spriteMesh = new THREE.Mesh(spriteGeo, this.spriteMat);
+    this.visualGroup.add(this.spriteMesh);
 
-    this.pendantMat = new THREE.MeshStandardMaterial({
-      color: preset.accentColor,
-      metalness: 0.85,
-      roughness: 0.15,
-      emissive: preset.accentColor,
-      emissiveIntensity: 0.3
+    // 3. Ground Contact Shadow Oval (Attached to mesh, dynamically adjusted on jump)
+    const shadowGeo = new THREE.PlaneGeometry(1.25, 0.72);
+    shadowGeo.rotateX(-Math.PI / 2);
+    this.shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x020617,
+      transparent: true,
+      opacity: 0.55,
+      fog: false
     });
+    this.shadowMesh = new THREE.Mesh(shadowGeo, this.shadowMat);
+    this.shadowMesh.position.y = 0.02;
+    this.mesh.add(this.shadowMesh);
 
-    this.glowMat = new THREE.MeshBasicMaterial({ color: preset.glowColor });
+    // 4. Forcefield Shield Aura - ground rune rings + protective energy dome + orbiting defense crystal orbs
+    const shieldGroup = new THREE.Group();
+    // Centered at hero core (y = 1.05)
+    shieldGroup.position.set(0, 1.05, 0);
 
-    this.bootsMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.55,
-      metalness: 0.3
-    });
-
-    this.eyeMat = new THREE.MeshBasicMaterial({
-      map: eyeTex,
-      transparent: true
-    });
-
-    // --- 1. Torso & Armor ---
-    this.torsoGroup = new THREE.Group();
-    this.torsoGroup.position.set(0, 0.9, 0);
-
-    const torsoGeo = new THREE.CylinderGeometry(0.24, 0.19, 0.56, 12);
-    this.torsoMesh = new THREE.Mesh(torsoGeo, this.tunicMat);
-    this.torsoMesh.castShadow = true;
-    this.torsoGroup.add(this.torsoMesh);
-
-    // Gold waist belt
-    const beltGeo = new THREE.CylinderGeometry(0.21, 0.2, 0.08, 12);
-    const beltMat = new THREE.MeshStandardMaterial({ color: preset.accentColor, metalness: 0.7, roughness: 0.3 });
-    const beltMesh = new THREE.Mesh(beltGeo, beltMat);
-    beltMesh.position.y = -0.22;
-    this.torsoGroup.add(beltMesh);
-
-    // Glowing Moon Pendant (Front of chest: local +Z)
-    const pendantGeo = new THREE.TorusGeometry(0.08, 0.024, 8, 16, Math.PI * 1.5);
-    this.pendantMesh = new THREE.Mesh(pendantGeo, this.pendantMat);
-    this.pendantMesh.position.set(0, 0.12, 0.23);
-    this.torsoGroup.add(this.pendantMesh);
-
-    // --- 2. Head & Cute Anime Face ---
-    this.headGroup = new THREE.Group();
-    this.headGroup.position.set(0, 0.42, 0);
-
-    const headGeo = new THREE.SphereGeometry(0.22, 16, 16);
-    const headMesh = new THREE.Mesh(headGeo, this.skinMat);
-    headMesh.castShadow = true;
-    this.headGroup.add(headMesh);
-
-    // Expressive Anime Eyes on local +Z face
-    const eyeGeo = new THREE.PlaneGeometry(0.08, 0.1);
-    this.leftEyeMesh = new THREE.Mesh(eyeGeo, this.eyeMat);
-    this.leftEyeMesh.position.set(-0.075, 0.02, 0.21);
-    this.headGroup.add(this.leftEyeMesh);
-
-    this.rightEyeMesh = new THREE.Mesh(eyeGeo, this.eyeMat);
-    this.rightEyeMesh.position.set(0.075, 0.02, 0.21);
-    this.headGroup.add(this.rightEyeMesh);
-
-    // Soft Blush on cheeks
-    const blushGeo = new THREE.PlaneGeometry(0.05, 0.025);
-    const blushMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35 });
-    const leftBlush = new THREE.Mesh(blushGeo, blushMat);
-    leftBlush.position.set(-0.09, -0.04, 0.208);
-    this.headGroup.add(leftBlush);
-    const rightBlush = new THREE.Mesh(blushGeo, blushMat);
-    rightBlush.position.set(0.09, -0.04, 0.208);
-    this.headGroup.add(rightBlush);
-
-    // --- 3. Hair (Crown, Bangs, Flowing Locks & Ponytail) ---
-    // Crown hair
-    const hairGeo = new THREE.SphereGeometry(0.245, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.65);
-    this.hairMesh = new THREE.Mesh(hairGeo, this.hairMat);
-    this.hairMesh.position.set(0, 0.04, -0.01);
-    this.headGroup.add(this.hairMesh);
-
-    // Front Bangs framing the forehead
-    [-0.07, 0, 0.07].forEach((bx, i) => {
-      const bangGeo = new THREE.ConeGeometry(0.045, 0.16, 5);
-      const bangMesh = new THREE.Mesh(bangGeo, this.hairMat);
-      bangMesh.rotation.x = Math.PI * 0.88;
-      bangMesh.rotation.z = (i - 1) * 0.18;
-      bangMesh.position.set(bx, 0.14, 0.18);
-      this.headGroup.add(bangMesh);
-    });
-
-    // Side hair locks
-    [-0.19, 0.19].forEach((sx) => {
-      const lockGeo = new THREE.ConeGeometry(0.04, 0.28, 5);
-      const lockMesh = new THREE.Mesh(lockGeo, this.hairMat);
-      lockMesh.rotation.x = Math.PI * 0.95;
-      lockMesh.position.set(sx, -0.02, 0.06);
-      this.headGroup.add(lockMesh);
-    });
-
-    // Main Volumetric Ponytail (Back of head: local -Z)
-    const tailGeo = new THREE.ConeGeometry(0.13, 0.55, 8);
-    this.ponytailMesh = new THREE.Mesh(tailGeo, this.hairMat);
-    this.ponytailMesh.rotation.x = -Math.PI * 0.68;
-    this.ponytailMesh.position.set(0, -0.05, -0.27);
-    this.headGroup.add(this.ponytailMesh);
-
-    // Secondary ponytail flare lock
-    const tailSubGeo = new THREE.ConeGeometry(0.08, 0.42, 6);
-    this.ponytailSecondary = new THREE.Mesh(tailSubGeo, this.hairMat);
-    this.ponytailSecondary.rotation.x = -Math.PI * 0.74;
-    this.ponytailSecondary.position.set(0, -0.12, -0.32);
-    this.headGroup.add(this.ponytailSecondary);
-
-    // Hair Ribbon / Tie Ring
-    const ribbonGeo = new THREE.TorusGeometry(0.09, 0.025, 6, 12);
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: preset.accentColor, metalness: 0.6 });
-    const ribbonMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
-    ribbonMesh.rotation.x = Math.PI * 0.32;
-    ribbonMesh.position.set(0, 0.06, -0.21);
-    this.headGroup.add(ribbonMesh);
-
-    this.torsoGroup.add(this.headGroup);
-
-    // --- 4. Arms with Pauldrons & Bracers ---
-    const armGeo = new THREE.CylinderGeometry(0.065, 0.055, 0.46, 8);
-    armGeo.translate(0, -0.2, 0);
-
-    const pauldronGeo = new THREE.SphereGeometry(0.11, 8, 8, 0, Math.PI * 2, 0, Math.PI * 0.6);
-
-    this.leftArm = new THREE.Group();
-    this.leftArm.position.set(-0.31, 0.2, 0);
-    const leftArmMesh = new THREE.Mesh(armGeo, this.tunicMat);
-    leftArmMesh.castShadow = true;
-    this.leftArm.add(leftArmMesh);
-    const leftPauldron = new THREE.Mesh(pauldronGeo, beltMat);
-    leftPauldron.position.set(0, 0.02, 0);
-    this.leftArm.add(leftPauldron);
-    this.torsoGroup.add(this.leftArm);
-
-    this.rightArm = new THREE.Group();
-    this.rightArm.position.set(0.31, 0.2, 0);
-    const rightArmMesh = new THREE.Mesh(armGeo, this.tunicMat);
-    rightArmMesh.castShadow = true;
-    this.rightArm.add(rightArmMesh);
-    const rightPauldron = new THREE.Mesh(pauldronGeo, beltMat);
-    rightPauldron.position.set(0, 0.02, 0);
-    this.rightArm.add(rightPauldron);
-    this.torsoGroup.add(this.rightArm);
-
-    // --- 5. Legs & Adventurer Boots ---
-    const legGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.34, 8);
-    legGeo.translate(0, -0.15, 0);
-
-    const bootGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.34, 8);
-    bootGeo.translate(0, -0.16, 0);
-
-    this.leftLeg = new THREE.Group();
-    this.leftLeg.position.set(-0.13, 0.6, 0);
-    const leftThigh = new THREE.Mesh(legGeo, this.tunicMat);
-    leftThigh.castShadow = true;
-    this.leftLeg.add(leftThigh);
-    const leftBoot = new THREE.Mesh(bootGeo, this.bootsMat);
-    leftBoot.position.set(0, -0.28, 0);
-    leftBoot.castShadow = true;
-    this.leftLeg.add(leftBoot);
-    this.visualGroup.add(this.leftLeg);
-
-    this.rightLeg = new THREE.Group();
-    this.rightLeg.position.set(0.13, 0.6, 0);
-    const rightThigh = new THREE.Mesh(legGeo, this.tunicMat);
-    rightThigh.castShadow = true;
-    this.rightLeg.add(rightThigh);
-    const rightBoot = new THREE.Mesh(bootGeo, this.bootsMat);
-    rightBoot.position.set(0, -0.28, 0);
-    rightBoot.castShadow = true;
-    this.rightLeg.add(rightBoot);
-    this.visualGroup.add(this.rightLeg);
-
-    // --- 6. Flowing Cape (Back of torso: local -Z) ---
-    const capeGeo = new THREE.PlaneGeometry(0.54, 0.88, 6, 6);
-    capeGeo.translate(0, -0.42, 0);
-    this.capeMesh = new THREE.Mesh(capeGeo, this.capeMat);
-    this.capeMesh.position.set(0, 0.22, -0.16);
-    this.torsoGroup.add(this.capeMesh);
-
-    this.visualGroup.add(this.torsoGroup);
-
-    // --- 7. Iridescent Moonlight Shield Bubble ---
-    const shieldGeo = new THREE.SphereGeometry(1.12, 24, 24);
-    const shieldMat = new THREE.MeshBasicMaterial({
+    // Ground Rune Rings at feet level (y = -1.02)
+    const ringGeo = new THREE.RingGeometry(0.75, 0.92, 40);
+    ringGeo.rotateX(-Math.PI / 2);
+    this.shieldRingMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.38,
-      wireframe: true
+      opacity: 0.85,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false
     });
-    this.shieldBubble = new THREE.Mesh(shieldGeo, shieldMat);
-    this.shieldBubble.position.set(0, 0.85, 0);
+    const ringMesh = new THREE.Mesh(ringGeo, this.shieldRingMat);
+    ringMesh.position.y = -1.02;
+    shieldGroup.add(ringMesh);
+
+    const outerRingGeo = new THREE.RingGeometry(0.98, 1.08, 40);
+    outerRingGeo.rotateX(-Math.PI / 2);
+    this.shieldOuterMat = new THREE.MeshBasicMaterial({
+      color: 0x818cf8,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false
+    });
+    const outerRingMesh = new THREE.Mesh(outerRingGeo, this.shieldOuterMat);
+    outerRingMesh.position.y = -1.02;
+    shieldGroup.add(outerRingMesh);
+
+    // Protective Energy Dome surrounding hero
+    const domeGeo = new THREE.SphereGeometry(1.32, 24, 16);
+    this.shieldDomeMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.32,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false
+    });
+    const dome = new THREE.Mesh(domeGeo, this.shieldDomeMat);
+    dome.position.y = 0;
+    dome.renderOrder = -1;
+    shieldGroup.add(dome);
+
+    // 3 Orbiting Celestial Defense Crystal Orbs
+    this.shieldOrbsGroup = new THREE.Group();
+    const orbGeo = new THREE.OctahedronGeometry(0.14, 0);
+    this.shieldOrbMats = [];
+    for (let i = 0; i < 3; i++) {
+      const orbMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending,
+        fog: false
+      });
+      this.shieldOrbMats.push(orbMat);
+      const orbMesh = new THREE.Mesh(orbGeo, orbMat);
+      const angle = (i * Math.PI * 2) / 3;
+      orbMesh.position.set(Math.cos(angle) * 1.18, 0, Math.sin(angle) * 1.18);
+      this.shieldOrbsGroup.add(orbMesh);
+    }
+    shieldGroup.add(this.shieldOrbsGroup);
+
+    this.shieldBubble = shieldGroup as unknown as THREE.Mesh;
     this.shieldBubble.visible = false;
     this.mesh.add(this.shieldBubble);
 
-    // --- 8. Magic Lunar Footsteps Trail Particles ---
-    const trailCount = 28;
+    // 5. Starlight Footstep Sparkle Trail
+    const trailCount = 40;
     this.trailPositions = new Float32Array(trailCount * 3);
     const trailGeo = new THREE.BufferGeometry();
     trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPositions, 3));
     const trailMat = new THREE.PointsMaterial({
       color: 0x38bdf8,
-      size: 0.18,
+      size: 0.15,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
     });
     this.magicTrailPoints = new THREE.Points(trailGeo, trailMat);
     this.mesh.add(this.magicTrailPoints);
-
-    // Default orientation: Running forward into -Z world!
-    this.visualGroup.rotation.y = Math.PI;
   }
 
-  // --- Costume Switching ---
+  /**
+   * Applies the selected costume. Updates the menu front view texture and sparkle trail color.
+   */
+  public applyCostume(costumeId: string, charId?: string): void {
+    if (charId) {
+      this.currentCharacterId = charId;
+    }
+    let effectiveCostume = costumeId;
+    if (this.currentCharacterId !== 'luna' && (!costumeId || costumeId === 'default' || costumeId === 'luna_default')) {
+      effectiveCostume = `${this.currentCharacterId}_default`;
+    }
+    this.currentCostumeId = effectiveCostume;
 
-  public applyCostume(costumeId: string): void {
-    const preset = COSTUME_PRESETS[costumeId] || COSTUME_PRESETS.default;
-    this.currentCostumeId = preset.id;
+    const colors: Record<string, number> = {
+      luna: 0x38bdf8,
+      stella: 0xc084fc,
+      solaris: 0xf59e0b,
+      nyx: 0x06b6d4
+    };
+    const glow = colors[this.currentCharacterId] || 0x38bdf8;
+    if (this.magicTrailPoints.material instanceof THREE.PointsMaterial) {
+      this.magicTrailPoints.material.color.setHex(glow);
+    }
 
-    // Update base colors
-    this.hairMat.color.setHex(preset.hairColor);
-    this.tunicMat.color.setHex(preset.tunicColor);
-    this.capeMat.color.setHex(preset.capeColor);
-    this.pendantMat.color.setHex(preset.accentColor);
-    this.pendantMat.emissive.setHex(preset.accentColor);
-    this.glowMat.color.setHex(preset.glowColor);
+    const setKey = this.costumeSpriteSets[this.currentCostumeId]
+      ? this.currentCostumeId
+      : (this.costumeSpriteSets[`${this.currentCharacterId}_default`] ? `${this.currentCharacterId}_default` : 'default');
+    const set = this.costumeSpriteSets[setKey] || this.costumeSpriteSets.default;
+    this.skillFX.setTheme(this.currentCharacterId, this.currentCostumeId);
+    if (this.isMenuMode) {
+      this.spriteMat.map = set.front;
+      this.spriteMat.needsUpdate = true;
+    }
+  }
 
-    // Generate & update dynamic fabric & eye textures
-    const fabricTex = TextureGenerator.createCostumeFabricTexture(preset.tunicHex, preset.trimHex);
-    this.tunicMat.map = fabricTex;
-    this.tunicMat.needsUpdate = true;
-    this.capeMat.map = fabricTex;
-    this.capeMat.needsUpdate = true;
+  /**
+   * Applies selected playable character (Luna, Stella, Solaris, Nyx).
+   */
+  public applyCharacter(charId: string, costumeId?: string): void {
+    this.currentCharacterId = charId;
+    if (costumeId && costumeId.startsWith(charId)) {
+      this.currentCostumeId = costumeId;
+    } else {
+      this.currentCostumeId = `${charId}_default`;
+    }
 
-    const eyeTex = TextureGenerator.createEyeTexture(preset.eyeColor);
-    this.eyeMat.map = eyeTex;
-    this.eyeMat.needsUpdate = true;
+    const colors: Record<string, number> = {
+      luna: 0x38bdf8,
+      stella: 0xc084fc,
+      solaris: 0xf59e0b,
+      nyx: 0x06b6d4
+    };
+    const glow = colors[charId] || 0x38bdf8;
+    if (this.magicTrailPoints.material instanceof THREE.PointsMaterial) {
+      this.magicTrailPoints.material.color.setHex(glow);
+    }
+
+    const setKey = this.costumeSpriteSets[this.currentCostumeId]
+      ? this.currentCostumeId
+      : (this.costumeSpriteSets[`${charId}_default`] ? `${charId}_default` : 'default');
+    const set = this.costumeSpriteSets[setKey] || this.costumeSpriteSets.default;
+    this.skillFX.setTheme(this.currentCharacterId, this.currentCostumeId);
+
+    if (this.isMenuMode) {
+      this.spriteMat.map = set.front;
+      this.spriteMat.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Activates the character's unique combat/survival skill.
+   */
+  public activateSkill(cooldownMult = 1.0, skillLevel = 1): { success: boolean; skillName: string } {
+    if (this.skillCooldownRemaining > 0 || this.state === CharacterState.DIE) {
+      return { success: false, skillName: '' };
+    }
+
+    const baseCooldowns: Record<string, number> = {
+      luna: 12,
+      stella: 15,
+      solaris: 17,
+      nyx: 16
+    };
+    const baseCooldown = baseCooldowns[this.currentCharacterId] || 12;
+    // Skill level reduces cooldown slightly (2% per level above 1, up to 30% extra reduction) and extends duration (+0.15s per level above 1)
+    const lvlCdMult = Math.max(0.7, 1.0 - Math.max(0, skillLevel - 1) * 0.02);
+    const bonusDuration = Math.min(3.0, Math.max(0, skillLevel - 1) * 0.15);
+
+    this.skillCooldownRemaining = baseCooldown * cooldownMult * lvlCdMult;
+    this.isSkillActive = true;
+    this.skillFX.triggerSkill(this.currentCharacterId, this.currentCostumeId);
+
+    if (this.currentCharacterId === 'luna') {
+      this.skillActiveTimeRemaining = 0.8 + bonusDuration * 0.25;
+      this.isSlashWaveActive = true;
+      this.slashWaveMesh.visible = true;
+      this.slashWaveMesh.position.set(0, 0.8, -1.2);
+      return { success: true, skillName: '달빛 일섬 (Moonlight Slash)' };
+    } else if (this.currentCharacterId === 'stella') {
+      this.skillActiveTimeRemaining = 6.0 + bonusDuration;
+      return { success: true, skillName: '스타폴 변환 (Starfall Transmute)' };
+    } else if (this.currentCharacterId === 'solaris') {
+      this.skillActiveTimeRemaining = 5.0 + bonusDuration;
+      return { success: true, skillName: '태양 전차 돌격 (Solar Juggernaut)' };
+    } else if (this.currentCharacterId === 'nyx') {
+      this.skillActiveTimeRemaining = 6.0 + bonusDuration;
+      return { success: true, skillName: '그림자 차원 은신 (Shadow Shift)' };
+    }
+
+    return { success: true, skillName: 'Active Skill' };
   }
 
   // --- Controls & Lane Mechanics ---
@@ -439,11 +578,16 @@ export class LunaCharacter {
   }
 
   public jump(): boolean {
-    if (this.state === CharacterState.DIE) return false;
-    if (this.state === CharacterState.RUN || this.state === CharacterState.SLIDE) {
+    if (this.state === CharacterState.DIE || this.isFallingIntoPit) return false;
+    if (
+      this.state === CharacterState.RUN ||
+      this.state === CharacterState.SLIDE ||
+      this.state === CharacterState.LAND
+    ) {
       this.state = CharacterState.JUMP;
       this.velocityY = this.jumpForce;
       this.slideTimer = 0;
+      this.landTimer = 0;
       this.visualGroup.scale.set(1, 1, 1);
       return true;
     }
@@ -451,10 +595,11 @@ export class LunaCharacter {
   }
 
   public slide(): boolean {
-    if (this.state === CharacterState.DIE) return false;
-    if (this.state === CharacterState.RUN) {
+    if (this.state === CharacterState.DIE || this.isFallingIntoPit) return false;
+    if (this.state === CharacterState.RUN || this.state === CharacterState.LAND) {
       this.state = CharacterState.SLIDE;
       this.slideTimer = this.slideDuration;
+      this.landTimer = 0;
       return true;
     } else if (this.state === CharacterState.JUMP || this.state === CharacterState.FALL) {
       // Immediate fast-fall dive
@@ -466,6 +611,15 @@ export class LunaCharacter {
   }
 
   public hitObstacle(isFatal = false): void {
+    // Nyx is completely immune during shadow phantasm
+    if (this.currentCharacterId === 'nyx' && this.isSkillActive) {
+      return;
+    }
+    // Solaris smashes through non-fatal obstacles during solar rush
+    if (this.currentCharacterId === 'solaris' && this.isSkillActive && !isFatal) {
+      return;
+    }
+
     if (!isFatal && this.hasShield) {
       this.hasShield = false;
       this.shieldBubble.visible = false;
@@ -480,31 +634,104 @@ export class LunaCharacter {
     this.shieldBubble.visible = active;
   }
 
-  // --- Update Loop & Procedural Animation ---
+  public activateMagnet(duration: number): void {
+    this.magnetTimeRemaining = Math.max(this.magnetTimeRemaining, duration);
+  }
 
-  public update(dt: number, forwardSpeed: number): void {
+  // --- Update Loop & 2.5D Sprite Animation ---
+
+  public update(dt: number, forwardSpeed = 16): void {
+    this.isMenuMode = false;
+
+    // Update active skill timers
+    if (this.skillCooldownRemaining > 0) {
+      this.skillCooldownRemaining = Math.max(0, this.skillCooldownRemaining - dt);
+    }
+    if (this.isSkillActive) {
+      this.skillActiveTimeRemaining = Math.max(0, this.skillActiveTimeRemaining - dt);
+      if (this.skillActiveTimeRemaining <= 0) {
+        this.isSkillActive = false;
+        if (this.isSlashWaveActive) {
+          this.isSlashWaveActive = false;
+          this.slashWaveMesh.visible = false;
+        }
+      }
+    }
+    if (this.isSlashWaveActive) {
+      this.slashWaveMesh.position.z -= dt * 65.0; // Rushes forward ahead of character
+    }
+
+    // Update active skill 3D visual FX, particle systems, and auras
+    this.skillFX.update(dt, this.isSkillActive, this.mesh.position, this.isSlashWaveActive, this.spriteMesh);
+
     if (this.state === CharacterState.DIE) {
       this.deathTimer += dt;
       this.animateDeath(dt);
       return;
     }
 
-    // 1. Horizontal Lane Transition (Smooth Spring Lerp)
-    const targetX = this.targetLane * LANE_WIDTH;
-    const diffX = targetX - this.mesh.position.x;
-    if (Math.abs(diffX) > 0.03) {
-      this.mesh.position.x += diffX * Math.min(1, dt * 15);
-      // Lateral tilt when dashing
-      this.visualGroup.rotation.z = diffX * 0.12;
-      this.isTransitioningLane = true;
+    // Select action sprite based on character/costume and state
+    let setKey = this.currentCostumeId;
+    if (this.currentCharacterId !== 'luna' && (!setKey || setKey === 'default' || !setKey.startsWith(this.currentCharacterId))) {
+      setKey = `${this.currentCharacterId}_default`;
+    }
+    if (!this.costumeSpriteSets[setKey]) {
+      setKey = `${this.currentCharacterId}_default`;
+    }
+    const currentSet = this.costumeSpriteSets[setKey] || this.costumeSpriteSets.default;
+    let targetTex = currentSet.runF1;
+
+    if (this.state === CharacterState.SLIDE) {
+      targetTex = currentSet.slide;
+    } else if (this.state === CharacterState.JUMP || this.state === CharacterState.FALL) {
+      targetTex = currentSet.jump;
     } else {
-      this.mesh.position.x = targetX;
-      this.currentLane = this.targetLane;
-      this.visualGroup.rotation.z = 0;
-      this.isTransitioningLane = false;
+      // 4-Frame running stride cycle based on runAnimTime (realistic alternating leg movement)
+      const norm = ((this.runAnimTime % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+      const frameIdx = Math.floor((norm / (Math.PI * 2)) * 4);
+      if (frameIdx === 0) targetTex = currentSet.runF1;
+      else if (frameIdx === 1) targetTex = currentSet.runF2;
+      else if (frameIdx === 2) targetTex = currentSet.runF3 || currentSet.runF1;
+      else targetTex = currentSet.runF4 || currentSet.runF2;
     }
 
-    // 2. Vertical Physics (Gravity & Jump)
+    if (this.spriteMat.map !== targetTex) {
+      this.spriteMat.map = targetTex;
+      this.spriteMat.needsUpdate = true;
+    }
+
+    // Fever mode rainbow glow or standard color
+    if (this.isFeverMode) {
+      const feverTime = Date.now() * 0.008;
+      this.spriteMat.color.setRGB(
+        0.85 + Math.sin(feverTime) * 0.15,
+        0.85 + Math.sin(feverTime + 2) * 0.15,
+        0.85 + Math.sin(feverTime + 4) * 0.15
+      );
+    } else {
+      this.spriteMat.color.setRGB(1, 1, 1);
+    }
+    this.spriteMat.opacity = 1.0;
+
+    // 1. Horizontal Lane Transition (Smooth Spring Lerp when not turning corner)
+    if (!this.isTurningCorner) {
+      const targetX = this.targetLane * LANE_WIDTH;
+      const diffX = targetX - this.mesh.position.x;
+      const cornerTilt = -this.cameraYaw * 0.35;
+      if (Math.abs(diffX) > 0.03) {
+        this.mesh.position.x += diffX * Math.min(1, dt * 15);
+        // Lateral tilt when dashing plus corner banking lean
+        this.visualGroup.rotation.z = diffX * 0.12 + cornerTilt;
+        this.isTransitioningLane = true;
+      } else {
+        this.mesh.position.x = targetX;
+        this.currentLane = this.targetLane;
+        this.visualGroup.rotation.z = cornerTilt;
+        this.isTransitioningLane = false;
+      }
+    }
+
+    // 2. Vertical Physics (Gravity & Jump & Abyss Pit Fall)
     if (this.state === CharacterState.JUMP || this.state === CharacterState.FALL) {
       this.velocityY += this.gravity * dt;
       this.posY += this.velocityY * dt;
@@ -513,16 +740,22 @@ export class LunaCharacter {
         this.state = CharacterState.FALL;
       }
 
-      if (this.posY <= 0) {
-        // Landed
+      if (!this.isFallingIntoPit && this.posY <= 0) {
+        // Landed on solid track floor
         this.posY = 0;
         this.velocityY = 0;
         this.state = CharacterState.LAND;
-        setTimeout(() => {
-          if (this.state === CharacterState.LAND) {
-            this.state = CharacterState.RUN;
-          }
-        }, 90);
+        this.landTimer = 0.09;
+        this.visualGroup.rotation.x = 0;
+      } else if (this.isFallingIntoPit) {
+        // Forward plunge posture as she falls down into the abyss pit
+        this.visualGroup.rotation.x = Math.min(0.7, -this.posY * 0.16);
+      }
+    } else if (this.state === CharacterState.LAND) {
+      this.landTimer -= dt;
+      if (this.landTimer <= 0) {
+        this.landTimer = 0;
+        this.state = CharacterState.RUN;
       }
     }
 
@@ -538,10 +771,32 @@ export class LunaCharacter {
 
     this.mesh.position.y = this.posY;
 
-    // 4. Shield Rotation Animation
+    // Contact shadow follows Luna's X/Z but stays on floor (y = 0.02); hidden when falling into pit
+    this.shadowMesh.visible = !this.isFallingIntoPit;
+    this.shadowMesh.position.y = -this.posY + 0.02;
+    const shadowScale = Math.max(0.38, 1.0 - this.posY * 0.22);
+    this.shadowMesh.scale.set(shadowScale, shadowScale, 1);
+    this.shadowMat.opacity = Math.max(0.12, 0.55 - this.posY * 0.12);
+
+    // 4. Shield Ground Ring & Orbiting Crystals Animation
     if (this.hasShield) {
-      this.shieldBubble.rotation.y += dt * 2.5;
-      this.shieldBubble.rotation.x += dt * 1.5;
+      this.shieldBubble.visible = true;
+      this.shieldBubble.rotation.y += dt * 2.2;
+      this.shieldOrbsGroup.rotation.y += dt * 3.6;
+      const shieldColors: Record<string, number> = { luna: 0x38bdf8, stella: 0xc084fc, solaris: 0xfbbf24, nyx: 0x22d3ee };
+      const c = shieldColors[this.currentCharacterId] || 0x38bdf8;
+      this.shieldRingMat.color.setHex(c);
+      this.shieldOuterMat.color.setHex(c);
+      this.shieldDomeMat.color.setHex(c);
+      for (const mat of this.shieldOrbMats) {
+        mat.color.setHex(c);
+      }
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
+      this.shieldDomeMat.opacity = 0.22 + pulse * 0.15;
+      this.shieldRingMat.opacity = 0.7 + pulse * 0.3;
+      this.shieldOuterMat.opacity = 0.5 + pulse * 0.3;
+    } else {
+      this.shieldBubble.visible = false;
     }
 
     // 5. Magnet Timer Update
@@ -549,96 +804,69 @@ export class LunaCharacter {
       this.magnetTimeRemaining = Math.max(0, this.magnetTimeRemaining - dt);
     }
 
-    // 6. Procedural Bone/Mesh Animations
-    this.animateProcedural(dt, forwardSpeed);
+    // 6. 2.5D Sprite Motion & Squash/Stretch
+    this.animateSprite(dt, forwardSpeed);
 
     // 7. Update Footstep Sparkle Trail
     this.updateSparkleTrail(dt);
   }
 
-  private animateProcedural(dt: number, speed: number): void {
+  private animateSprite(dt: number, speed: number): void {
     const runFreq = Math.max(8, speed * 0.72);
     this.runAnimTime += dt * runFreq;
 
-    // Ensure visual group faces forward (-Z) while running
-    this.visualGroup.rotation.y = Math.PI;
+    // Sprite quad faces camera in running mode, maintaining orientation with camera angle
+    this.visualGroup.rotation.y = this.cameraYaw;
 
     switch (this.state) {
       case CharacterState.RUN: {
-        const swing = Math.sin(this.runAnimTime);
-        this.leftLeg.rotation.x = swing * 0.85;
-        this.rightLeg.rotation.x = -swing * 0.85;
-        this.leftArm.rotation.x = -swing * 0.75;
-        this.rightArm.rotation.x = swing * 0.75;
-
-        // Torso & head natural bounce
-        this.torsoGroup.position.y = 0.9 + Math.abs(swing) * 0.08;
-        this.torsoGroup.rotation.y = swing * 0.08;
+        // Subtle vertical footstep bounce
+        const bounce = Math.abs(Math.sin(this.runAnimTime)) * 0.065;
+        this.visualGroup.position.y = bounce;
         this.visualGroup.scale.set(1, 1, 1);
-
-        // Cape and ponytail waving dynamically back towards camera (+Z world = local -Z)
-        const wind = Math.sin(this.runAnimTime * 1.8);
-        this.capeMesh.rotation.x = -0.45 - wind * 0.28;
-        this.ponytailMesh.rotation.x = -Math.PI * 0.68 - wind * 0.16;
-        this.ponytailSecondary.rotation.x = -Math.PI * 0.74 - wind * 0.22;
         break;
       }
 
       case CharacterState.JUMP: {
-        this.leftLeg.rotation.x = 0.55;
-        this.rightLeg.rotation.x = 0.35;
-        this.leftArm.rotation.x = -1.6;
-        this.rightArm.rotation.x = -1.6;
-        this.capeMesh.rotation.x = -0.85;
-        this.ponytailMesh.rotation.x = -Math.PI * 0.55;
-        this.torsoGroup.position.y = 0.9;
+        // Jump upward stretch
+        this.visualGroup.position.y = 0.05;
+        this.visualGroup.scale.set(0.92, 1.08, 1);
         break;
       }
 
       case CharacterState.FALL: {
-        this.leftLeg.rotation.x = -0.3;
-        this.rightLeg.rotation.x = -0.2;
-        this.leftArm.rotation.x = -0.8;
-        this.rightArm.rotation.x = -0.8;
-        this.capeMesh.rotation.x = -1.0;
-        this.ponytailMesh.rotation.x = -Math.PI * 0.85;
+        this.visualGroup.position.y = 0;
+        this.visualGroup.scale.set(0.96, 1.04, 1);
         break;
       }
 
       case CharacterState.LAND: {
-        this.visualGroup.scale.set(1.15, 0.85, 1.15);
-        this.leftLeg.rotation.x = 0.25;
-        this.rightLeg.rotation.x = 0.25;
+        // Impact landing squash
+        this.visualGroup.position.y = 0;
+        this.visualGroup.scale.set(1.15, 0.86, 1);
         break;
       }
 
       case CharacterState.SLIDE: {
-        // Lower profile and slide flat
-        this.visualGroup.scale.set(1.0, 0.48, 1.25);
-        this.leftLeg.rotation.x = 1.4;
-        this.rightLeg.rotation.x = 1.2;
-        this.leftArm.rotation.x = 1.0;
-        this.rightArm.rotation.x = 1.0;
-        this.capeMesh.rotation.x = -0.1;
+        // Slide squash: low profile (46% height) to pass cleanly under low archways
+        this.visualGroup.position.y = 0;
+        this.visualGroup.scale.set(1.28, 0.46, 1);
         break;
       }
 
       case CharacterState.HIT: {
-        this.visualGroup.rotation.x = 0.4;
-        this.torsoGroup.rotation.y = 0.6;
+        this.visualGroup.rotation.z = 0.35;
         break;
       }
     }
   }
 
   private animateDeath(dt: number): void {
-    // Graceful tumble and fall to floor
-    const progress = Math.min(1.0, this.deathTimer / 0.4);
-    this.visualGroup.rotation.x = progress * Math.PI * 0.48;
-    this.mesh.position.y = Math.max(0.12, this.posY - progress * 0.6);
-    this.capeMesh.rotation.x = 0.1;
-    this.leftArm.rotation.x = 0;
-    this.rightArm.rotation.x = 0;
+    const progress = Math.min(1.0, this.deathTimer / 0.45);
+    this.visualGroup.rotation.z = progress * (Math.PI / 2.2);
+    this.visualGroup.position.y = Math.max(0, 0.3 - progress * 0.3);
+    this.spriteMat.color.setRGB(1.0, Math.max(0.25, 1.0 - progress * 0.75), Math.max(0.25, 1.0 - progress * 0.75));
+    this.spriteMat.opacity = Math.max(0.35, 1.0 - progress * 0.5);
   }
 
   private updateSparkleTrail(dt: number): void {
@@ -663,22 +891,40 @@ export class LunaCharacter {
     posAttr.needsUpdate = true;
   }
 
+  /**
+   * Main Menu & Costume Select 3D showcase mode.
+   * Displays full-body front illustration with gentle idle floating & breathing.
+   */
   public setMenuPreviewMode(rotAngle: number): void {
-    // Face the camera in menu showcase
-    this.visualGroup.rotation.y = rotAngle;
-    this.visualGroup.rotation.x = 0;
-    this.visualGroup.rotation.z = 0;
-    this.visualGroup.scale.set(1, 1, 1);
+    this.isMenuMode = true;
     this.mesh.position.set(0, 0, 0);
+    this.posY = 0;
 
-    // Idle breathing & gentle hair motion
+    // Display front costume illustration
+    const setKey = this.costumeSpriteSets[this.currentCostumeId]
+      ? this.currentCostumeId
+      : (this.costumeSpriteSets[`${this.currentCharacterId}_default`] ? `${this.currentCharacterId}_default` : 'default');
+    const set = this.costumeSpriteSets[setKey] || this.costumeSpriteSets.default;
+    if (this.spriteMat.map !== set.front) {
+      this.spriteMat.map = set.front;
+      this.spriteMat.needsUpdate = true;
+    }
+    this.spriteMat.color.setRGB(1, 1, 1);
+    this.spriteMat.opacity = 1.0;
+
+    // Face camera with subtle sway
+    this.visualGroup.rotation.set(0, rotAngle * 0.25, 0);
+
+    // Idle breathing & floating
     const idleTime = Date.now() * 0.002;
-    this.torsoGroup.position.y = 0.9 + Math.sin(idleTime) * 0.03;
-    this.capeMesh.rotation.x = -0.2 + Math.sin(idleTime * 0.8) * 0.08;
-    this.ponytailMesh.rotation.x = -Math.PI * 0.68 + Math.sin(idleTime * 1.2) * 0.06;
-    this.ponytailSecondary.rotation.x = -Math.PI * 0.74 + Math.sin(idleTime * 1.2) * 0.08;
-    this.leftArm.rotation.x = Math.sin(idleTime) * 0.05;
-    this.rightArm.rotation.x = -Math.sin(idleTime) * 0.05;
+    this.visualGroup.position.y = Math.sin(idleTime) * 0.035;
+    const breath = 1.0 + Math.sin(idleTime * 1.5) * 0.015;
+    this.visualGroup.scale.set(breath, breath, 1);
+
+    // Shadow breathing
+    this.shadowMesh.position.y = 0.02;
+    this.shadowMesh.scale.set(breath, breath, 1);
+    this.shadowMat.opacity = 0.52;
   }
 
   public reset(): void {
@@ -687,14 +933,34 @@ export class LunaCharacter {
     this.isTransitioningLane = false;
     this.posY = 0;
     this.velocityY = 0;
+    this.isFallingIntoPit = false;
     this.slideTimer = 0;
+    this.landTimer = 0;
     this.deathTimer = 0;
     this.state = CharacterState.RUN;
     this.mesh.position.set(0, 0, 0);
-    this.visualGroup.rotation.set(0, Math.PI, 0);
+    this.visualGroup.position.set(0, 0, 0);
+    this.visualGroup.rotation.set(0, 0, 0);
     this.visualGroup.scale.set(1, 1, 1);
+    this.spriteMat.color.setRGB(1, 1, 1);
+    this.spriteMat.opacity = 1.0;
     this.hasShield = false;
     this.shieldBubble.visible = false;
     this.magnetTimeRemaining = 0;
+    this.isMenuMode = true;
+    this.isFeverMode = false;
+    this.currentCharacterId = 'luna';
+    this.skillCooldownRemaining = 0;
+    this.isSkillActive = false;
+    this.skillActiveTimeRemaining = 0;
+    this.isSlashWaveActive = false;
+    this.skillFX.reset();
+
+    const setKey = this.costumeSpriteSets[this.currentCostumeId]
+      ? this.currentCostumeId
+      : (this.costumeSpriteSets[`${this.currentCharacterId}_default`] ? `${this.currentCharacterId}_default` : 'default');
+    const set = this.costumeSpriteSets[setKey] || this.costumeSpriteSets.default;
+    this.spriteMat.map = set.front;
+    this.spriteMat.needsUpdate = true;
   }
 }

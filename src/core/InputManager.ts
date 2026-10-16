@@ -3,7 +3,8 @@ export enum InputAction {
   MOVE_RIGHT = 'MOVE_RIGHT',
   JUMP = 'JUMP',
   SLIDE = 'SLIDE',
-  PAUSE = 'PAUSE'
+  PAUSE = 'PAUSE',
+  SKILL = 'SKILL'
 }
 
 export type InputCallback = (action: InputAction) => void;
@@ -20,6 +21,7 @@ export class InputManager {
   private bufferedAction: InputAction | null = null;
   private isProcessingTransition = false;
   private isEnabled = true;
+  private swipeTriggered = false;
 
   constructor() {
     this.initEventListeners();
@@ -34,6 +36,10 @@ export class InputManager {
     if (!enabled) {
       this.bufferedAction = null;
     }
+  }
+
+  public getActive(): boolean {
+    return this.isEnabled;
   }
 
   public setProcessingTransition(busy: boolean): void {
@@ -78,11 +84,17 @@ export class InputManager {
       'touchstart',
       (e: TouchEvent) => {
         if (!this.isEnabled || e.touches.length === 0) return;
+        const target = e.target as HTMLElement | null;
+        if (target && target.closest && target.closest('button, .modal-overlay, input, select')) {
+          this.isTouching = false;
+          return;
+        }
         const touch = e.touches[0];
         this.touchStartX = touch.clientX;
         this.touchStartY = touch.clientY;
         this.touchStartTime = performance.now();
         this.isTouching = true;
+        this.swipeTriggered = false;
       },
       { passive: false }
     );
@@ -90,9 +102,33 @@ export class InputManager {
     window.addEventListener(
       'touchmove',
       (e: TouchEvent) => {
-        if (this.isTouching) {
-          // Block native scrolling and gestures
-          e.preventDefault();
+        if (!this.isTouching) return;
+        e.preventDefault();
+
+        // Immediate swipe trigger as soon as swipe threshold is exceeded for crisp, lag-free response
+        if (!this.swipeTriggered && e.touches.length > 0) {
+          const touch = e.touches[0];
+          const deltaX = touch.clientX - this.touchStartX;
+          const deltaY = touch.clientY - this.touchStartY;
+          const absX = Math.abs(deltaX);
+          const absY = Math.abs(deltaY);
+
+          if (absX >= this.SWIPE_THRESHOLD || absY >= this.SWIPE_THRESHOLD) {
+            this.swipeTriggered = true;
+            if (absX > absY) {
+              if (deltaX > 0) {
+                this.emitAction(InputAction.MOVE_RIGHT);
+              } else {
+                this.emitAction(InputAction.MOVE_LEFT);
+              }
+            } else {
+              if (deltaY < 0) {
+                this.emitAction(InputAction.JUMP);
+              } else {
+                this.emitAction(InputAction.SLIDE);
+              }
+            }
+          }
         }
       },
       { passive: false }
@@ -103,6 +139,9 @@ export class InputManager {
       (e: TouchEvent) => {
         if (!this.isTouching || !this.isEnabled) return;
         this.isTouching = false;
+
+        // If already triggered immediately during touchmove, do not duplicate
+        if (this.swipeTriggered) return;
 
         const touch = e.changedTouches[0];
         if (!touch) return;
@@ -117,19 +156,16 @@ export class InputManager {
         const absY = Math.abs(deltaY);
 
         if (absX < this.SWIPE_THRESHOLD && absY < this.SWIPE_THRESHOLD) {
-          // Tap detected (ignored for running controls)
           return;
         }
 
         if (absX > absY) {
-          // Horizontal swipe
           if (deltaX > 0) {
             this.emitAction(InputAction.MOVE_RIGHT);
           } else {
             this.emitAction(InputAction.MOVE_LEFT);
           }
         } else {
-          // Vertical swipe
           if (deltaY < 0) {
             this.emitAction(InputAction.JUMP);
           } else {
@@ -142,6 +178,7 @@ export class InputManager {
 
     window.addEventListener('touchcancel', () => {
       this.isTouching = false;
+      this.swipeTriggered = false;
     });
 
     // 2. Keyboard fallback for desktop testing & development
@@ -165,6 +202,11 @@ export class InputManager {
         case 'ArrowDown':
         case 'KeyS':
           this.emitAction(InputAction.SLIDE);
+          break;
+        case 'KeyE':
+        case 'KeyQ':
+        case 'KeyF':
+          this.emitAction(InputAction.SKILL);
           break;
         case 'Escape':
           this.emitAction(InputAction.PAUSE);

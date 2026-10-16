@@ -114,23 +114,29 @@ html, body {
   padding: 16px;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .modal-overlay.hidden {
-  display: none;
+  display: none !important;
   opacity: 0;
   pointer-events: none;
 }
 
 .modal-card {
-  width: 100%;
+  position: relative;
+  width: 92vw;
   max-width: 440px;
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-radius: 20px;
-  padding: 24px 20px;
+  padding: 20px 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  word-break: keep-all;
   animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -241,13 +247,72 @@ html, body {
 
 .menu-top-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.btn-top-settings {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: var(--silver-light);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-top-settings:hover,
+.btn-top-settings:active {
+  transform: scale(1.1) rotate(45deg);
+  border-color: var(--primary-gold);
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
+}
+
+.btn-modal-close-corner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 20;
+}
+
+.btn-modal-close-corner:hover,
+.btn-modal-close-corner:active {
+  color: #ffffff;
+  border-color: var(--mystic-cyan);
+  background: rgba(30, 41, 59, 0.95);
+  transform: scale(1.1);
 }
 
 .title-container {
-  margin-top: auto;
-  margin-bottom: 24px;
+  margin-top: 14px;
+  margin-bottom: auto;
   text-align: center;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0) 80%);
+  padding: 10px 20px;
+  border-radius: 20px;
+  pointer-events: none;
 }
 
 .title-sub {
@@ -273,9 +338,10 @@ html, body {
 }
 
 .title-desc {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--silver-mid);
   margin-top: 6px;
+  white-space: nowrap;
 }
 
 .menu-actions {
@@ -293,11 +359,44 @@ html, body {
   gap: 12px;
 }
 
+.menu-three-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.menu-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+  font-size: 13px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.menu-btn-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(56, 189, 248, 0.4));
+  transition: transform 0.2s ease;
+}
+
+.menu-card-btn:hover .menu-btn-icon {
+  transform: scale(1.1);
+}
+
 .controls-guide {
   text-align: center;
-  font-size: 12px;
-  color: rgba(226, 232, 240, 0.5);
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.6);
   margin-top: 14px;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -305,6 +404,107 @@ html, body {
    ========================================================================== */
 #game-hud {
   pointer-events: none;
+  justify-content: flex-start;
+}
+
+.hud-fever-wrap {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 165px;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: 12px;
+  padding: 4px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 14px rgba(251, 191, 36, 0.25);
+  z-index: 10;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.fever-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.fever-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.fever-pct {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fef08a;
+  white-space: nowrap;
+}
+
+.fever-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.fever-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #f43f5e);
+  border-radius: 3px;
+  transition: width 0.15s ease-out;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+}
+
+.hud-combo-badge {
+  position: absolute;
+  top: calc(195px + var(--safe-top));
+  left: 16px;
+  background: rgba(30, 27, 75, 0.88);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  color: #e9d5ff;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+  z-index: 8;
+  white-space: nowrap;
+}
+
+.hud-stage-banner {
+  position: absolute;
+  top: calc(90px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--mystic-cyan);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(56, 189, 248, 0.2);
+  z-index: 9;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .hud-top {
@@ -314,61 +514,101 @@ html, body {
   width: 100%;
 }
 
+.hud-stats-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  padding: 4px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.hud-stats-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(148, 163, 184, 0.25);
+}
+
 .hud-stat {
   display: flex;
   flex-direction: column;
+  white-space: nowrap;
 }
 
 .hud-label {
   font-family: var(--font-display);
-  font-size: 10px;
-  letter-spacing: 1.5px;
+  font-size: 9px;
+  letter-spacing: 1.2px;
   color: var(--silver-mid);
+  white-space: nowrap;
 }
 
 .hud-value {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 19px;
   font-weight: 800;
   color: var(--silver-light);
+  line-height: 1.1;
   text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  white-space: nowrap;
+}
+
+.hud-dist-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
 }
 
 .hud-distance .hud-value {
-  font-size: 28px;
+  font-size: 19px;
   color: var(--mystic-cyan);
+  white-space: nowrap;
 }
 
 .hud-unit {
-  font-size: 14px;
-  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--silver-mid);
+  white-space: nowrap;
 }
 
 .hud-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .hud-buffs-container {
+  position: absolute;
+  top: calc(130px + var(--safe-top));
+  left: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 20px;
   align-items: flex-start;
+  pointer-events: none;
+  z-index: 8;
+  white-space: nowrap;
 }
 
 .buff-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .buff-item.hidden {
@@ -461,14 +701,19 @@ html, body {
 /* Shop Modal */
 .shop-card {
   max-width: 480px;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-height: 86vh;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 16px;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-right: 44px;
 }
 
 .shop-tabs {
@@ -507,50 +752,56 @@ html, body {
 .upgrade-item, .reward-box {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 10px;
 }
 
 .item-icon-box, .reward-icon {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
   background: rgba(30, 41, 59, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
 .item-info, .reward-info {
   flex: 1;
+  min-width: 0;
 }
 
 .item-title, .reward-title {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--silver-light);
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .item-lvl {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--mystic-cyan);
   background: rgba(56, 189, 248, 0.15);
-  padding: 2px 6px;
+  padding: 1px 6px;
   border-radius: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .item-desc, .reward-desc {
   font-size: 11px;
   color: var(--silver-mid);
   margin-top: 2px;
+  word-break: keep-all;
+  line-height: 1.35;
 }
 
 .progress-bar-wrap {
@@ -559,7 +810,7 @@ html, body {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .progress-bar {
@@ -573,14 +824,17 @@ html, body {
   border: 1px solid var(--primary-gold);
   color: var(--primary-gold);
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 66px;
+  justify-content: center;
   transition: all 0.15s ease;
 }
 
@@ -595,6 +849,48 @@ html, body {
   border-color: rgba(148, 163, 184, 0.3);
   color: var(--silver-mid);
   cursor: not-allowed;
+}
+
+/* Growth Modal (Vertical Scrolling Up & Down) */
+.growth-card {
+  max-height: 86vh;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 20px;
+}
+
+.growth-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(86vh - 130px);
+  max-height: calc(86dvh - 130px);
+  padding-right: 6px;
+  margin-top: 8px;
+  touch-action: pan-y;
+}
+
+.growth-items-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.growth-items-list::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.growth-items-list::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.6);
+  border-radius: 4px;
+}
+
+.growth-items-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.9);
 }
 
 /* Settings Modal */
@@ -780,3 +1076,1887 @@ input:checked + .slider:before {
   margin-left: 6px;
   font-weight: normal;
 }
+
+#costume-modal {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.costume-card {
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(10, 15, 30, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.2);
+}
+
+.costume-icon-box {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.costume-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Multi-Currency Badges */
+.currency-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chest-badge {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(30, 27, 75, 0.6);
+}
+
+.chest-icon {
+  font-size: 14px;
+}
+
+/* 4-Column Menu Sub Actions */
+.menu-four-cols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 440px) {
+  .menu-four-cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+/* Bottom HUD Touch Action Bar & Skill Button */
+.hud-bottom-bar {
+  position: absolute;
+  bottom: calc(18px + var(--safe-bottom));
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+.hud-skill-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-touch-skill {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid var(--mystic-cyan);
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.4) 0%, rgba(15, 23, 42, 0.95) 80%);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-touch-skill:active {
+  transform: scale(0.92);
+}
+
+.skill-icon-img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+.skill-cooldown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 7, 18, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-gold);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  border-radius: 50%;
+}
+
+.skill-cooldown-overlay.hidden {
+  display: none;
+}
+
+.hud-skill-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--silver-light);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  background: rgba(15, 23, 42, 0.75);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Starlight Gacha Modal */
+.gacha-card {
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.gacha-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8), rgba(49, 46, 129, 0.5));
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.gacha-banner-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(192, 132, 252, 0.6));
+}
+
+.gacha-banner-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f3e8ff;
+  font-family: var(--font-display);
+}
+
+.gacha-banner-sub {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.gacha-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.gacha-pull-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 10px;
+  gap: 4px;
+}
+
+.gacha-cost {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.btn-locked {
+  background: rgba(30, 41, 59, 0.75);
+  color: #94a3b8;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  cursor: pointer;
+  font-size: 0.82rem;
+  letter-spacing: -0.2px;
+  box-shadow: none;
+}
+
+.btn-locked:hover {
+  background: rgba(51, 65, 85, 0.85);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.gacha-results-container {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gacha-results-title {
+  font-weight: 800;
+  color: var(--primary-gold);
+  font-size: 14px;
+  text-align: center;
+}
+
+.gacha-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.gacha-result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: modalPop 0.25s ease-out;
+}
+
+.gacha-result-card.rarity-ssr {
+  border-color: #fbbf24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  background: rgba(69, 26, 3, 0.7);
+}
+
+.gacha-result-card.rarity-sr {
+  border-color: #c084fc;
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+  background: rgba(46, 16, 101, 0.7);
+}
+
+.gacha-result-card.rarity-r {
+  border-color: #38bdf8;
+  background: rgba(12, 74, 110, 0.6);
+}
+
+.gacha-res-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+
+.gacha-res-name {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.gacha-res-desc {
+  font-size: 10px;
+  color: var(--silver-mid);
+}
+
+/* Character Tabs */
+.character-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.character-tabs .shop-tab {
+  padding: 8px 12px;
+  font-size: 12px;
+  flex-shrink: 0;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clickable-badge {
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.clickable-badge:hover {
+  transform: scale(1.06);
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #fbbf24;
+}
+
+/* ====================================================
+   Mystery Chest Opening Modal & Shaking/Burst Animation
+   ==================================================== */
+.chest-open-card {
+  max-width: 360px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 20%, rgba(45, 20, 7, 0.95), rgba(15, 23, 42, 0.98));
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.35);
+}
+
+.chest-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  color: var(--primary-gold);
+}
+
+.chest-stage-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  margin: 15px 0;
+}
+
+.chest-anim-box {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chest-sprite {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chest-anim-box.shake .chest-sprite {
+  animation: chestShake 0.4s ease-in-out infinite;
+}
+
+.chest-anim-box.burst .chest-sprite {
+  animation: chestBurst 0.5s ease-out forwards;
+}
+
+.chest-halo-rays {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.8) 0%, rgba(245, 158, 11, 0.3) 45%, transparent 70%);
+  border-radius: 50%;
+  animation: haloRotate 4s linear infinite;
+  pointer-events: none;
+}
+
+.chest-reward-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  background: rgba(15, 23, 42, 0.95);
+  border: 2px solid #fbbf24;
+  border-radius: 16px;
+  padding: 16px 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.5);
+  animation: rewardPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  z-index: 10;
+}
+
+.chest-reward-icon {
+  font-size: 38px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 10px #fbbf24);
+}
+
+.chest-reward-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+
+.chest-reward-desc {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.chest-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@keyframes chestShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-4px, 2px) rotate(-6deg); }
+  40% { transform: translate(4px, -2px) rotate(6deg); }
+  60% { transform: translate(-3px, 1px) rotate(-4deg); }
+  80% { transform: translate(3px, -1px) rotate(4deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes chestBurst {
+  0% { transform: scale(0.9); filter: brightness(1); }
+  50% { transform: scale(1.22); filter: brightness(1.8) drop-shadow(0 0 25px #fbbf24); }
+  100% { transform: scale(1.05); filter: brightness(1.2) drop-shadow(0 0 15px #f59e0b); }
+}
+
+@keyframes haloRotate {
+  0% { transform: rotate(0deg) scale(0.9); opacity: 0.6; }
+  50% { transform: rotate(180deg) scale(1.15); opacity: 0.95; }
+  100% { transform: rotate(360deg) scale(0.9); opacity: 0.6; }
+}
+
+@keyframes rewardPop {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.5); }
+  70% { opacity: 1; transform: translate(-50%, -52%) scale(1.05); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ====================================================
+   Starlight Gacha Summon Animation & Skip Button
+   ==================================================== */
+.gacha-summon-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  max-width: 420px;
+  min-height: 380px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 50%, rgba(30, 27, 75, 0.95), rgba(3, 7, 18, 0.98));
+  border: 2px solid rgba(192, 132, 252, 0.6);
+  border-radius: 20px;
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.4);
+  padding: 30px 20px;
+}
+
+.btn-skip-gacha {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(251, 191, 36, 0.6);
+  color: #fbbf24;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s ease;
+}
+
+.btn-skip-gacha:hover {
+  background: #fbbf24;
+  color: #0f172a;
+  transform: scale(1.05);
+}
+
+.gacha-portal-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.gacha-portal-beam {
+  position: absolute;
+  width: 10px;
+  height: 260px;
+  background: linear-gradient(180deg, transparent, #c084fc, #fbbf24, #38bdf8, transparent);
+  filter: blur(4px);
+  animation: portalBeam 1.2s ease-in-out infinite alternate;
+}
+
+.gacha-portal-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 3px dashed rgba(192, 132, 252, 0.8);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+.gacha-portal-ring.ring-outer {
+  width: 180px;
+  height: 180px;
+  border-color: #fbbf24;
+  animation: portalSpin 5s linear infinite;
+}
+
+.gacha-portal-ring.ring-inner {
+  width: 120px;
+  height: 120px;
+  border-color: #38bdf8;
+  animation: portalSpin 3s linear infinite reverse;
+}
+
+.gacha-portal-core {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, #ffffff 0%, #c084fc 40%, rgba(147, 51, 234, 0.2) 80%);
+  border-radius: 50%;
+  box-shadow: 0 0 30px #c084fc, 0 0 50px #fbbf24;
+  animation: portalPulse 1s ease-in-out infinite alternate;
+}
+
+.gacha-portal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.gacha-portal-sub {
+  font-size: 12px;
+  color: #cbd5e1;
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+@keyframes portalSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes portalPulse {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 25px #ffffff); }
+}
+
+@keyframes portalBeam {
+  0% { transform: scaleY(0.6) scaleX(0.8); opacity: 0.5; }
+  100% { transform: scaleY(1.3) scaleX(1.4); opacity: 1; }
+}
+
+/* ====================================================
+   Reorganized Hero Selector & Costume Wardrobe Grid
+   ==================================================== */
+.hero-selector-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.hero-selector-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-chip {
+  flex: 1;
+  min-width: 68px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hero-chip:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.hero-chip.active {
+  border-color: var(--primary-gold);
+  background: linear-gradient(180deg, rgba(30, 58, 138, 0.6), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+}
+
+.hero-chip-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-chip.active .hero-chip-avatar {
+  border-color: var(--primary-gold);
+}
+
+.hero-chip-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hero-chip.active .hero-chip-name {
+  color: var(--primary-gold);
+}
+
+.hero-detail-banner {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.hero-detail-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-detail-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.hero-detail-skill {
+  font-size: 12px;
+  color: #38bdf8;
+  white-space: nowrap;
+}
+
+.hero-detail-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.btn-hero-action {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.costume-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.costume-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.costume-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
+  flex: 1 1 auto;
+}
+
+.costume-card-item {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.costume-card-item.equipped {
+  border-color: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+}
+
+.costume-card-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+}
+
+.costume-card-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.costume-card-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 26px;
+}
+
+.btn-costume-action {
+  width: 100%;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 8px;
+  margin-top: auto;
+}
+
+/* ====================================================
+   Shop Items Grid (달빛 상점)
+   ==================================================== */
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.shop-item-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 14px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  transition: all 0.2s ease;
+  min-height: 135px;
+}
+
+.shop-item-card:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(30, 41, 59, 0.85);
+}
+
+.shop-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shop-item-icon {
+  font-size: 24px;
+}
+
+.shop-item-stock {
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  white-space: nowrap;
+}
+
+.shop-item-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shop-item-desc {
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.3;
+  height: 28px;
+  overflow: hidden;
+  word-break: keep-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 2px;
+}
+
+.btn-shop-buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0f172a;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 4px;
+  border-radius: 9px;
+  cursor: pointer;
+  margin-top: auto;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-shop-buy:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+/* ====================================================
+   Probability Rates Tables
+   ==================================================== */
+.rates-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 10px;
+}
+
+.btn-rates-toggle {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-rates-toggle:hover {
+  color: #ffffff;
+  border-color: #38bdf8;
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.rates-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.rates-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fbbf24;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  padding-bottom: 4px;
+}
+
+.rates-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.rate-badge {
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 10.5px;
+}
+
+.badge-ssr {
+  background: linear-gradient(135deg, #ef4444, #f59e0b);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.badge-sr {
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: #ffffff;
+}
+
+.badge-r {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.rate-desc {
+  color: #cbd5e1;
+  line-height: 1.35;
+  word-break: keep-all;
+  font-size: 10.5px;
+}
+
+/* ====================================================
+   Grade-Specific Gacha Summon Portal Animation
+   ==================================================== */
+.gacha-portal-rarity-badge {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+/* R Tier Portal (Blue / Starlight) */
+.portal-grade-r {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.3);
+}
+.portal-grade-r .gacha-portal-rarity-badge {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid #38bdf8;
+}
+.portal-grade-r .gacha-portal-beam {
+  background: linear-gradient(180deg, transparent, #38bdf8, #0284c7, transparent);
+}
+.portal-grade-r .ring-outer {
+  border-color: #38bdf8;
+}
+.portal-grade-r .ring-inner {
+  border-color: #7dd3fc;
+}
+.portal-grade-r .gacha-portal-core {
+  background: radial-gradient(circle, #ffffff 0%, #38bdf8 50%, rgba(2, 132, 199, 0.2) 80%);
+  box-shadow: 0 0 30px #38bdf8;
+}
+.portal-grade-r .gacha-portal-title {
+  color: #38bdf8;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+/* SR Tier Portal (Violet / Cosmic Thunder) */
+.portal-grade-sr {
+  border-color: rgba(192, 132, 252, 0.8);
+  box-shadow: 0 0 50px rgba(168, 85, 247, 0.5);
+}
+.portal-grade-sr .gacha-portal-rarity-badge {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.6);
+}
+.portal-grade-sr .gacha-portal-beam {
+  background: linear-gradient(180deg, transparent, #c084fc, #9333ea, transparent);
+  width: 14px;
+}
+.portal-grade-sr .ring-outer {
+  border-color: #c084fc;
+}
+.portal-grade-sr .ring-inner {
+  border-color: #e879f9;
+}
+.portal-grade-sr .gacha-portal-core {
+  background: radial-gradient(circle, #ffffff 0%, #c084fc 40%, rgba(147, 51, 234, 0.4) 80%);
+  box-shadow: 0 0 40px #a855f7, 0 0 60px #c084fc;
+}
+.portal-grade-sr .gacha-portal-title {
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.6);
+}
+
+/* SSR Tier Portal (Gold / Solar Supernova & Screen Shake) */
+.portal-grade-ssr {
+  border-color: #fbbf24;
+  box-shadow: 0 0 70px rgba(251, 191, 36, 0.8), 0 0 100px rgba(244, 63, 94, 0.5);
+  animation: ssrStageShake 0.4s ease-in-out infinite alternate;
+}
+.portal-grade-ssr .gacha-portal-rarity-badge {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+  border: 1px solid #fef08a;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+  animation: pulse 1s infinite alternate;
+}
+.portal-grade-ssr .gacha-portal-beam {
+  background: linear-gradient(180deg, transparent, #fef08a, #fbbf24, #f43f5e, transparent);
+  width: 22px;
+  filter: blur(6px);
+  animation: portalBeam 0.8s ease-in-out infinite alternate;
+}
+.portal-grade-ssr .ring-outer {
+  border-color: #fbbf24;
+  border-width: 4px;
+  box-shadow: 0 0 35px #fbbf24;
+}
+.portal-grade-ssr .ring-inner {
+  border-color: #f43f5e;
+  border-width: 4px;
+  box-shadow: 0 0 35px #f43f5e;
+}
+.portal-grade-ssr .gacha-portal-core {
+  background: radial-gradient(circle, #ffffff 0%, #fef08a 30%, #f59e0b 60%, rgba(244, 63, 94, 0.6) 90%);
+  box-shadow: 0 0 60px #fbbf24, 0 0 90px #f43f5e, 0 0 120px #ffffff;
+}
+.portal-grade-ssr .gacha-portal-title {
+  color: #fbbf24;
+  font-size: 20px;
+  text-shadow: 0 0 20px #fbbf24, 0 0 30px #f59e0b;
+}
+
+@keyframes ssrStageShake {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-2px, 2px); }
+  100% { transform: translate(2px, -2px); }
+}
+
+/* ====================================================
+   VIP Member Badge & Shop Header
+   ==================================================== */
+.vip-member-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(234, 88, 12, 0.4));
+  border: 1px solid #fbbf24;
+  color: #fef08a;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  letter-spacing: 0.5px;
+  animation: vipShine 2s infinite alternate;
+}
+
+@keyframes vipShine {
+  0% { box-shadow: 0 0 6px rgba(251, 191, 36, 0.3); }
+  100% { box-shadow: 0 0 16px rgba(251, 191, 36, 0.7); }
+}
+
+/* ====================================================
+   Shop Tabs Navigation & Panes
+   ==================================================== */
+.shop-tabs-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.shop-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shop-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: #f8fafc;
+}
+
+.shop-tab-btn.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(56, 189, 248, 0.15));
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.shop-tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(86vh - 160px);
+  max-height: calc(86dvh - 160px);
+  padding-right: 4px;
+}
+
+/* ====================================================
+   Cash Shop Banner & Packages Grid
+   ==================================================== */
+.cash-shop-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(45, 20, 7, 0.8), rgba(20, 15, 35, 0.8));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 12px;
+}
+
+.banner-crown {
+  font-size: 26px;
+}
+
+.banner-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.banner-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.cash-packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.cash-pkg-card {
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+  border: 1.5px solid rgba(245, 158, 11, 0.3);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cash-pkg-card:hover {
+  transform: translateY(-2px);
+  border-color: #fbbf24;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
+}
+
+.cash-pkg-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cash-pkg-badge {
+  background: linear-gradient(135deg, #ef4444, #f59e0b);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.3px;
+}
+
+.cash-pkg-icon {
+  font-size: 24px;
+}
+
+.cash-pkg-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.cash-pkg-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.cash-pkg-rewards {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cash-reward-li {
+  font-size: 11px;
+  color: #fef08a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cash-reward-li .chk {
+  color: #22c55e;
+  font-weight: 800;
+}
+
+.cash-pkg-action {
+  margin-top: auto;
+}
+
+.btn-cash-buy {
+  width: 100%;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1px solid #fef08a;
+  border-radius: 10px;
+  color: #1e1b4b;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn-cash-buy:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
+}
+
+.btn-cash-buy:disabled,
+.btn-cash-buy.btn-owned {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #4ade80;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* ====================================================
+   Cash Billing Modal (Simulated Google Play Store Sheet)
+   ==================================================== */
+.billing-card {
+  max-width: 360px;
+  background: #0f172a;
+  border: 2px solid #38bdf8;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.25);
+  padding: 20px;
+  text-align: center;
+}
+
+.billing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.billing-store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.billing-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.billing-pkg-icon {
+  font-size: 42px;
+}
+
+.billing-pkg-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.billing-pkg-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.billing-rewards-list {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  margin: 6px 0;
+}
+
+.billing-reward-item {
+  font-size: 12px;
+  color: #fef08a;
+  font-weight: 600;
+}
+
+.billing-price-box {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.billing-price-label {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.billing-price-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.billing-payment-method {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.billing-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.billing-footer .btn {
+  flex: 1;
+}
+
+.btn-billing-confirm {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-color: #38bdf8 !important;
+}
+
+.btn-billing-confirm:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+}
+
+/* --- Character Skill Detail Modal Styles --- */
+.skill-detail-card {
+  max-width: 480px;
+  width: 92%;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.98), rgba(10, 15, 30, 0.99));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.2);
+  padding: 20px;
+}
+
+.skill-hero-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.skill-tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.skill-tab-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.skill-tab-btn.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.35));
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.skill-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skill-hero-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+}
+
+.skill-avatar-wrap {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #38bdf8;
+  background: #0f172a;
+  flex-shrink: 0;
+}
+
+.skill-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.skill-badge-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff;
+  overflow: hidden;
+}
+
+.skill-badge-img {
+  width: 14px;
+  height: 14px;
+}
+
+.skill-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.skill-header-hero-name {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.skill-header-skill-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.skill-tags-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.skill-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+}
+
+.skill-pill-cd {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.skill-pill-type {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+
+.skill-desc-box {
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 10px;
+}
+
+.skill-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.skill-desc-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+.skill-mechanic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.skill-mechanic-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.skill-bullet {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.skill-tip-box {
+  padding: 10px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #6ee7b7;
+  line-height: 1.5;
+}
+
+.clickable-skill {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.clickable-skill:hover {
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+.skill-info-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-left: 6px;
+  transition: all 0.2s ease;
+}
+
+.clickable-skill:hover .skill-info-badge {
+  background: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Revive Continue & Ad Modal Styles
+   ========================================================================== */
+.revive-card {
+  max-width: 380px;
+  border: 1px solid rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(251, 191, 36, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.revive-badge {
+  display: inline-block;
+  align-self: center;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.text-gold {
+  color: #fbbf24;
+}
+
+.revive-subtitle {
+  font-size: 13px;
+  color: #cbd5e1;
+  margin: 4px 0 12px;
+  line-height: 1.4;
+}
+
+.revive-subtitle strong {
+  color: #38bdf8;
+}
+
+.revive-stats-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.revive-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.revive-stat .lbl {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.revive-stat strong {
+  font-size: 18px;
+  font-family: var(--font-display);
+  color: #f1f5f9;
+}
+
+.revive-timer-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.revive-timer-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.revive-timer-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #fbbf24);
+  transition: width 0.1s linear;
+}
+
+.revive-timer-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.revive-buttons button {
+  font-size: 14px;
+  padding: 12px;
+}
+
+.ad-btn-icon {
+  margin-right: 4px;
+}
+
+/* Simulated Ad Modal */
+.ad-player-card {
+  max-width: 420px;
+  background: #090d16;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.25);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ad-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ad-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ad-countdown-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.ad-video-screen {
+  background: linear-gradient(145deg, #1e1b4b, #0f172a);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 12px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
+}
+
+.ad-badge-promo {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  background: #ef4444;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ad-game-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fef08a;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+}
+
+.ad-game-tagline {
+  font-size: 12px;
+  color: #93c5fd;
+  text-align: center;
+}
+
+.ad-game-char-preview {
+  font-size: 11px;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.ad-progress-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.ad-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #10b981);
+  transition: width 0.1s linear;
+}
+
+.ad-bottom-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.ad-bottom-bar button {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+}
+
+

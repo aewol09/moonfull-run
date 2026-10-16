@@ -17,7 +17,11 @@ export class AudioManager {
   private initContext(): void {
     if (this.ctx) return;
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        typeof window !== 'undefined'
+          ? window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+          : undefined;
+      if (!AudioCtx || typeof AudioCtx !== 'function') return;
       this.ctx = new AudioCtx();
 
       this.bgmGain = this.ctx.createGain();
@@ -230,6 +234,219 @@ export class AudioManager {
 
       osc.start(now + idx * 0.16);
       osc.stop(now + idx * 0.16 + 0.36);
+    });
+  }
+
+  // --- Hero Unique Active Skills SFX ---
+
+  public playSkillSlash(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(260, now + 0.18);
+
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(600, now);
+
+    gain.gain.setValueAtTime(0.55, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.23);
+
+    // Crystalline shimmer overtone
+    const shimmer = this.ctx.createOscillator();
+    const sGain = this.ctx.createGain();
+    shimmer.type = 'sine';
+    shimmer.frequency.setValueAtTime(1760, now);
+    shimmer.frequency.exponentialRampToValueAtTime(880, now + 0.25);
+    sGain.gain.setValueAtTime(0.3, now);
+    sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    shimmer.connect(sGain);
+    sGain.connect(this.sfxGain);
+    shimmer.start(now);
+    shimmer.stop(now + 0.29);
+  }
+
+  public playSkillStarfall(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    // Cascading celestial chime arpeggio: C6, E6, G6, B6, C7
+    const notes = [1046.5, 1318.5, 1567.98, 1975.5, 2093.0];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+      gain.gain.setValueAtTime(0.35, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now + idx * 0.05);
+      osc.stop(now + idx * 0.05 + 0.36);
+    });
+  }
+
+  public playSkillSolarDash(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(75, now);
+    osc.frequency.exponentialRampToValueAtTime(260, now + 0.3);
+
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.42);
+  }
+
+  public playSkillShadow(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.linearRampToValueAtTime(880, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.35);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+
+  public playChestFanfare(isJackpot = false): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const notes = isJackpot
+      ? [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98] // Grand Major Fanfare
+      : [523.25, 659.25, 783.99, 1046.5];                 // Harmonious chime
+
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+      gain.gain.setValueAtTime(isJackpot ? 0.45 : 0.35, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.4);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.42);
+    });
+  }
+
+  public playGachaPortal(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(740, now + 0.5);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.56);
+  }
+
+  public playStageFanfare(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const notes = [440.0, 554.37, 659.25, 880.0]; // A Major Herald
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+
+      gain.gain.setValueAtTime(0.35, now + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now + idx * 0.1);
+      osc.stop(now + idx * 0.1 + 0.36);
+    });
+  }
+
+  public playReviveFanfare(): void {
+    if (!this.isSfxEnabled) return;
+    this.ensureContext();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const chords = [329.63, 415.3, 493.88, 659.25, 987.77]; // E major ascension
+    chords.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+
+      gain.gain.setValueAtTime(0.4, now + idx * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.45);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(now + idx * 0.07);
+      osc.stop(now + idx * 0.07 + 0.46);
     });
   }
 

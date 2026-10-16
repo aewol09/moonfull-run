@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import * as THREE from 'three';
 import { CollisionSystem } from '../src/world/CollisionSystem';
 import { LunaCharacter, CharacterState, LANE_WIDTH } from '../src/entities/LunaCharacter';
@@ -8,9 +8,12 @@ describe('CollisionSystem', () => {
   let collisionSystem: CollisionSystem;
   let luna: LunaCharacter;
 
-  beforeEach(() => {
+  beforeAll(() => {
     collisionSystem = new CollisionSystem();
     luna = new LunaCharacter();
+  });
+
+  beforeEach(() => {
     luna.reset();
   });
 
@@ -24,13 +27,32 @@ describe('CollisionSystem', () => {
     expect(result.fatal).toBe(false);
   });
 
-  it('should safely pass under a low arch when sliding', () => {
+  it('should safely pass under a low arch when sliding in center lane', () => {
     const arch = ObstacleFactory.createLowArch(0, -10);
     luna.mesh.position.set(0, 0, -10);
     luna.state = CharacterState.SLIDE;
 
     const result = collisionSystem.checkCollisions(luna, [arch], 0.016);
     expect(result.hit).toBe(false);
+  });
+
+  it('should collide with low arch when sliding in left or right side lanes', () => {
+    const arch = ObstacleFactory.createLowArch(0, -10);
+
+    // Left side lane sliding -> hits barrier
+    luna.mesh.position.set(-LANE_WIDTH, 0, -10);
+    luna.state = CharacterState.SLIDE;
+    let result = collisionSystem.checkCollisions(luna, [arch], 0.016);
+    expect(result.hit).toBe(true);
+    expect(result.fatal).toBe(false);
+
+    // Right side lane sliding -> hits barrier
+    arch.cleared = false;
+    luna.mesh.position.set(LANE_WIDTH, 0, -10);
+    luna.state = CharacterState.SLIDE;
+    result = collisionSystem.checkCollisions(luna, [arch], 0.016);
+    expect(result.hit).toBe(true);
+    expect(result.fatal).toBe(false);
   });
 
   it('should detect fatal pit fall on broken bridge when not jumping', () => {
@@ -94,5 +116,151 @@ describe('CollisionSystem', () => {
     const result = collisionSystem.checkCollisions(luna, [moving], 0.016, 15);
     expect(result.hit).toBe(true);
     expect(result.fatal).toBe(false);
+  });
+
+  describe('Skill Barrier (Mandatory Skill Obstacle)', () => {
+    it('should block player across all lanes if no skill is active, even when jumping or sliding', () => {
+      // Test center lane
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.mesh.position.set(0, 0, -50);
+      luna.state = CharacterState.RUN;
+      let result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(true);
+
+      // Test left lane with jump
+      barrier.cleared = false;
+      luna.mesh.position.set(-LANE_WIDTH, 1.8, -50);
+      luna.state = CharacterState.JUMP;
+      result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(true);
+
+      // Test right lane with slide
+      barrier.cleared = false;
+      luna.mesh.position.set(LANE_WIDTH, 0, -50);
+      luna.state = CharacterState.SLIDE;
+      result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(true);
+    });
+
+    it('should warn player when approaching skill barrier within 35 meters', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -60);
+      barrier.warned = false;
+      luna.mesh.position.set(0, 0, -35); // 25m away
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.skillBarrierWarning).toBe(true);
+      expect(barrier.warned).toBe(true);
+    });
+
+    it('should smash skill barrier when Luna activates Crescent Slash Wave or active skill', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.applyCharacter('luna');
+      luna.mesh.position.set(0, 0, -50);
+      luna.isSkillActive = true;
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(false);
+      expect(result.smashed).toBe(true);
+      expect(result.skillBarrierBroken).toBe(true);
+      expect(barrier.cleared).toBe(true);
+    });
+
+    it('should smash skill barrier when Stella activates Celestial Starfall', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.applyCharacter('stella');
+      luna.mesh.position.set(0, 0, -50);
+      luna.isSkillActive = true;
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(false);
+      expect(result.smashed).toBe(true);
+      expect(result.skillBarrierBroken).toBe(true);
+    });
+
+    it('should smash skill barrier when Solaris activates Sunfire Juggernaut', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.applyCharacter('solaris');
+      luna.mesh.position.set(0, 0, -50);
+      luna.isSkillActive = true;
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(false);
+      expect(result.smashed).toBe(true);
+      expect(result.skillBarrierBroken).toBe(true);
+    });
+
+    it('should phase through skill barrier when Nyx activates Shadow Shift', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.applyCharacter('nyx');
+      luna.mesh.position.set(0, 0, -50);
+      luna.isSkillActive = true;
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(false);
+      expect(result.evaded).toBe(true);
+      expect(result.skillBarrierBroken).toBe(true);
+    });
+
+    it('should smash skill barrier when Fever Mode is active', () => {
+      const barrier = ObstacleFactory.createSkillBarrier(0, -50);
+      luna.mesh.position.set(0, 0, -50);
+      luna.isFeverMode = true;
+
+      const result = collisionSystem.checkCollisions(luna, [barrier], 0.016);
+      expect(result.hit).toBe(false);
+      expect(result.smashed).toBe(true);
+      expect(result.skillBarrierBroken).toBe(true);
+    });
+  });
+
+  describe('Skill Charge Rune', () => {
+    it('should instantly recharge character skill cooldown upon pickup', () => {
+      const rune = ObstacleFactory.createSkillChargeRune(0, -45);
+      luna.skillCooldownRemaining = 12.5; // On long cooldown
+      luna.mesh.position.set(0, 0, -45);
+
+      const result = collisionSystem.checkCollisions(luna, [rune], 0.016);
+      expect(result.skillChargeCollected).toBe(true);
+      expect(luna.skillCooldownRemaining).toBe(0);
+      expect(rune.cleared).toBe(true);
+    });
+  });
+
+  describe('Stage Themed Obstacles', () => {
+    it('should collide with Vine Brier (Stage 2) in lane and dodge when moving away', () => {
+      const vine = ObstacleFactory.createVineBrier(1, -70);
+      luna.mesh.position.set(LANE_WIDTH, 0, -70);
+      let result = collisionSystem.checkCollisions(luna, [vine], 0.016);
+      expect(result.hit).toBe(true);
+
+      vine.cleared = false;
+      luna.mesh.position.set(0, 0, -70); // moved to center
+      result = collisionSystem.checkCollisions(luna, [vine], 0.016);
+      expect(result.hit).toBe(false);
+    });
+
+    it('should collide with Magma Pillar (Stage 3) in lane and dodge when moving away', () => {
+      const magma = ObstacleFactory.createMagmaPillar(-1, -80);
+      luna.mesh.position.set(-LANE_WIDTH, 0, -80);
+      let result = collisionSystem.checkCollisions(luna, [magma], 0.016);
+      expect(result.hit).toBe(true);
+
+      magma.cleared = false;
+      luna.mesh.position.set(0, 0, -80);
+      result = collisionSystem.checkCollisions(luna, [magma], 0.016);
+      expect(result.hit).toBe(false);
+    });
+
+    it('should collide with Void Obelisk (Stage 4) in lane and dodge when moving away', () => {
+      const obelisk = ObstacleFactory.createVoidObelisk(0, -90);
+      luna.mesh.position.set(0, 0, -90);
+      let result = collisionSystem.checkCollisions(luna, [obelisk], 0.016);
+      expect(result.hit).toBe(true);
+
+      obelisk.cleared = false;
+      luna.mesh.position.set(LANE_WIDTH, 0, -90);
+      result = collisionSystem.checkCollisions(luna, [obelisk], 0.016);
+      expect(result.hit).toBe(false);
+    });
   });
 });

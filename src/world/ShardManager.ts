@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { LANE_WIDTH } from '../entities/LunaCharacter';
+import { AssetLoader } from '../render/AssetLoader';
 
 export interface ShardInstance {
   mesh: THREE.Mesh;
@@ -13,21 +14,34 @@ export interface ShardInstance {
 export class ShardManager {
   private scene: THREE.Scene;
   private shards: ShardInstance[] = [];
-  private shardGeo: THREE.OctahedronGeometry;
-  private shardMat: THREE.MeshStandardMaterial;
+  private shardGeo: THREE.PlaneGeometry;
+  private shardMat: THREE.MeshBasicMaterial;
+  private shardTextures: Record<string, THREE.Texture>;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    // Glowing celestial diamond/shard geometry (faceted crystal)
-    this.shardGeo = new THREE.OctahedronGeometry(0.32, 0);
-    this.shardMat = new THREE.MeshStandardMaterial({
-      color: 0xfef08a,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 1.2,
-      roughness: 0.15,
-      metalness: 0.85,
-      flatShading: true
+    this.shardTextures = {
+      default: AssetLoader.loadTexture('/assets/moon_shard.png'),
+      guardian: AssetLoader.loadTexture('/assets/moon_shard_guardian.png'),
+      dawn: AssetLoader.loadTexture('/assets/moon_shard_dawn.png')
+    };
+    this.shardGeo = new THREE.PlaneGeometry(0.85, 0.85);
+    this.shardMat = new THREE.MeshBasicMaterial({
+      map: this.shardTextures.default,
+      transparent: true,
+      alphaTest: 0.05,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
+  }
+
+  public applyCostumeShard(costumeId: string): void {
+    let key = costumeId;
+    if (costumeId === 'luna_guardian' || costumeId === 'guardian') key = 'guardian';
+    else if (costumeId === 'luna_dawn' || costumeId === 'dawn') key = 'dawn';
+    const tex = this.shardTextures[key] || this.shardTextures.default;
+    this.shardMat.map = tex;
+    this.shardMat.needsUpdate = true;
   }
 
   public spawnShard(lane: number, zPos: number, height = 0.8): ShardInstance {
@@ -78,10 +92,11 @@ export class ShardManager {
     for (const shard of this.shards) {
       if (!shard.active || shard.collected) continue;
 
-      // Gentle floating spin
-      shard.mesh.rotation.y += dt * 3.5;
-      shard.mesh.rotation.x = Math.sin(time + shard.zPos) * 0.2;
-      shard.mesh.position.y = shard.initialY + Math.sin(time * 1.5 + shard.zPos * 0.5) * 0.15;
+      // Radiant celestial star rotation & floating
+      shard.mesh.rotation.z += dt * 1.8;
+      shard.mesh.position.y = shard.initialY + Math.sin(time * 2.2 + shard.zPos * 0.5) * 0.12;
+      const pulse = 1.0 + Math.sin(time * 3.5 + shard.zPos) * 0.08;
+      shard.mesh.scale.set(pulse, pulse, 1);
 
       const dist = shard.mesh.position.distanceTo(playerPos);
 
@@ -105,6 +120,26 @@ export class ShardManager {
       // 3. Recycle if left behind player
       if (shard.mesh.position.z > playerPos.z + 12) {
         shard.active = false;
+        shard.mesh.visible = false;
+      }
+    }
+  }
+
+  public clearNearZ(centerZ: number, range: number): void {
+    for (const shard of this.shards) {
+      if (shard.active && Math.abs(shard.zPos - centerZ) <= range) {
+        shard.active = false;
+        shard.collected = false;
+        shard.mesh.visible = false;
+      }
+    }
+  }
+
+  public clearPastZ(thresholdZ: number): void {
+    for (const shard of this.shards) {
+      if (shard.active && shard.zPos <= thresholdZ) {
+        shard.active = false;
+        shard.collected = false;
         shard.mesh.visible = false;
       }
     }

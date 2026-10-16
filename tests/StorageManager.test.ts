@@ -70,6 +70,10 @@ describe('StorageManager', () => {
     sm.addCoins(1000);
     expect(sm.upgrade('magnet')).toBe(true);
     expect(sm.getData().upgrades.magnet).toBe(5);
+    expect(sm.getUpgradeCost('magnet')).toBe(1400);
+
+    // Max level check
+    (sm as unknown as { data: { upgrades: { magnet: number } } }).data.upgrades.magnet = UPGRADE_MAX_LEVEL;
     expect(sm.getUpgradeCost('magnet')).toBeNull();
     expect(sm.upgrade('magnet')).toBe(false); // cannot upgrade beyond max
   });
@@ -83,12 +87,71 @@ describe('StorageManager', () => {
     // Cannot equip locked costume
     expect(sm.equipCostume('guardian')).toBe(false);
 
-    // Unlock costume
+    // Unlock costume (Luna is unlocked by default, so Luna's costumes can be unlocked)
     sm.unlockCostume('guardian');
     expect(sm.isCostumeUnlocked('guardian')).toBe(true);
 
     // Now equip succeeds
     expect(sm.equipCostume('guardian')).toBe(true);
-    expect(sm.getData().currentCostume).toBe('guardian');
+    expect(sm.getData().currentCostume).toBe('luna_guardian');
+  });
+
+  it('should prevent unlocking costumes if character is not yet unlocked', () => {
+    const sm = new StorageManager();
+    // Solaris is locked by default
+    expect(sm.isCharacterUnlocked('solaris')).toBe(false);
+
+    // Attempting to unlock Solaris costume must fail even with abundant coins!
+    sm.addCoins(10000);
+    expect(sm.unlockCostume('solaris_obsidian', 600)).toBe(false);
+    expect(sm.isCostumeUnlocked('solaris_obsidian')).toBe(false);
+    expect(sm.equipCostume('solaris_obsidian')).toBe(false);
+
+    // After unlocking Solaris character, skin purchase is now permitted
+    expect(sm.unlockCharacter('solaris', 1200)).toBe(true);
+    expect(sm.isCharacterUnlocked('solaris')).toBe(true);
+
+    expect(sm.unlockCostume('solaris_obsidian', 600)).toBe(true);
+    expect(sm.isCostumeUnlocked('solaris_obsidian')).toBe(true);
+    expect(sm.equipCostume('solaris_obsidian', 'solaris')).toBe(true);
+    expect(sm.getEquippedCostume('solaris')).toBe('solaris_obsidian');
+  });
+
+  it('should successfully buy starter cash package and receive rewards', () => {
+    const sm = new StorageManager();
+    const initCoins = sm.getData().coins;
+    const initChests = sm.getData().mysteryChests;
+
+    const res = sm.buyCashPackage('starter_pack');
+    expect(res.success).toBe(true);
+    expect(sm.getData().coins).toBe(initCoins + 5000);
+    expect(sm.getData().mysteryChests).toBe(initChests + 5);
+    expect(sm.getInventoryCount('revive_feather')).toBe(5);
+    expect(sm.getInventoryCount('start_shield')).toBe(10);
+  });
+
+  it('should successfully buy VIP cash package and activate VIP perks', () => {
+    const sm = new StorageManager();
+    expect(sm.isVipMember()).toBe(false);
+
+    const res = sm.buyCashPackage('vip_unlimited');
+    expect(res.success).toBe(true);
+    expect(sm.isVipMember()).toBe(true);
+    expect(sm.getData().coins).toBeGreaterThanOrEqual(20000);
+  });
+
+  it('should unlock all characters when buying mythic truck package', () => {
+    const sm = new StorageManager();
+    expect(sm.isCharacterUnlocked('stella')).toBe(false);
+    expect(sm.isCharacterUnlocked('solaris')).toBe(false);
+    expect(sm.isCharacterUnlocked('nyx')).toBe(false);
+
+    const res = sm.buyCashPackage('mythic_truck');
+    expect(res.success).toBe(true);
+    expect(sm.isCharacterUnlocked('stella')).toBe(true);
+    expect(sm.isCharacterUnlocked('solaris')).toBe(true);
+    expect(sm.isCharacterUnlocked('nyx')).toBe(true);
+    expect(sm.getData().coins).toBeGreaterThanOrEqual(120000);
+    expect(sm.getData().mysteryChests).toBeGreaterThanOrEqual(40);
   });
 });

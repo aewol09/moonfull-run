@@ -502,4 +502,559 @@ export class TextureGenerator {
     this.cache.set(key, tex);
     return tex;
   }
+
+  /**
+   * 9. Luminous Atmospheric Sea of Clouds / Chasm Mist Texture (per stage)
+   */
+  public static createCloudSeaTexture(stage: number): THREE.CanvasTexture {
+    const key = `cloud_sea_stage_${stage}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = this.get2DContext(canvas);
+
+    if (!ctx) {
+      const fallback = new THREE.CanvasTexture(canvas);
+      this.cache.set(key, fallback);
+      return fallback;
+    }
+
+    const palettes: Record<number, { bg: string; cloud: string; mist: string; rim: string }> = {
+      1: { bg: '#081226', cloud: '#1e3a8a', mist: '#38bdf8', rim: '#93c5fd' }, // Moonlit Ruins
+      2: { bg: '#041d14', cloud: '#064e3b', mist: '#10b981', rim: '#6ee7b7' }, // Starlight Forest
+      3: { bg: '#170b28', cloud: '#4c1d95', mist: '#a855f7', rim: '#e9d5ff' }, // Amethyst Sanctuary
+      4: { bg: '#06202e', cloud: '#0e7490', mist: '#06b6d4', rim: '#67e8f9' }, // Jade Canyon
+      5: { bg: '#2b1008', cloud: '#7c2d12', mist: '#d97706', rim: '#fde047' }, // Twilight Temple
+      6: { bg: '#260606', cloud: '#7f1d1d', mist: '#dc2626', rim: '#fca5a5' }, // Crimson Moon
+      7: { bg: '#081c33', cloud: '#0369a1', mist: '#38bdf8', rim: '#e0f2fe' }, // Glacial Frost
+      8: { bg: '#260d03', cloud: '#9a3412', mist: '#ea580c', rim: '#fdba74' }, // Solar Eclipse
+      9: { bg: '#1a052e', cloud: '#581c87', mist: '#9333ea', rim: '#f0abfc' }, // Void Abyss
+      10: { bg: '#0b0f2e', cloud: '#3730a3', mist: '#6366f1', rim: '#f43f5e' } // Celestial Chaos
+    };
+
+    const p = palettes[stage] || palettes[1];
+
+    // 1. Deep atmospheric background
+    ctx.fillStyle = p.bg;
+    ctx.fillRect(0, 0, size, size);
+
+    // 2. Rolling volumetric cloud banks
+    for (let i = 0; i < 28; i++) {
+      const cx = (Math.sin(i * 1.7) * 0.5 + 0.5) * size;
+      const cy = (Math.cos(i * 2.3) * 0.5 + 0.5) * size;
+      const radius = 60 + (i % 5) * 24;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      grad.addColorStop(0, p.cloud);
+      grad.addColorStop(0.55, p.mist);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Ethereal luminous stardust & light wisps
+    ctx.globalAlpha = 0.65;
+    for (let j = 0; j < 40; j++) {
+      const wx = Math.random() * size;
+      const wy = Math.random() * size;
+      const wr = 2 + Math.random() * 5;
+      ctx.fillStyle = p.rim;
+      ctx.beginPath();
+      ctx.arc(wx, wy, wr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1.0;
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(5, 5);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * 10. Luna's Crescent Slash Projectile Texture (Per Skin)
+   */
+  public static createCrescentSlashTexture(
+    slashColorHex: string,
+    coreColorHex: string,
+    runeType: 'moon' | 'star' | 'sun'
+  ): THREE.CanvasTexture {
+    const key = `slash_${slashColorHex}_${runeType}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const w = 512;
+    const h = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = this.get2DContext(canvas);
+
+    if (!ctx) {
+      const fallback = new THREE.CanvasTexture(canvas);
+      this.cache.set(key, fallback);
+      return fallback;
+    }
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. Broad Sweeping Energy Arc (Crescent Blade)
+    const cx = w * 0.5;
+    const cy = h * 0.85;
+    const outerR = w * 0.46;
+    const innerR = w * 0.38;
+
+    // Glowing outer edge aura
+    const edgeGrad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR * 1.1);
+    edgeGrad.addColorStop(0, coreColorHex);
+    edgeGrad.addColorStop(0.5, slashColorHex);
+    edgeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.fillStyle = edgeGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR * 1.08, -Math.PI * 0.88, -Math.PI * 0.12, false);
+    ctx.arc(cx, cy + 25, innerR * 0.9, -Math.PI * 0.14, -Math.PI * 0.86, true);
+    ctx.closePath();
+    ctx.fill();
+
+    // Dense inner razor edge
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, -Math.PI * 0.82, -Math.PI * 0.18, false);
+    ctx.arc(cx, cy + 18, outerR - 10, -Math.PI * 0.18, -Math.PI * 0.82, true);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Emblems in center of blade
+    ctx.strokeStyle = slashColorHex;
+    ctx.fillStyle = coreColorHex;
+    ctx.lineWidth = 3;
+
+    const runeX = cx;
+    const runeY = cy - outerR * 0.92;
+
+    if (runeType === 'moon') {
+      // Crescent Moon
+      ctx.beginPath();
+      ctx.arc(runeX, runeY, 18, 0.4, Math.PI * 1.6);
+      ctx.arc(runeX + 6, runeY, 14, Math.PI * 1.5, 0.5, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (runeType === 'star') {
+      // Sacred Star Cross
+      for (let arm = 0; arm < 4; arm++) {
+        const ang = (arm * Math.PI) / 2;
+        ctx.beginPath();
+        ctx.moveTo(runeX, runeY);
+        ctx.lineTo(runeX + Math.cos(ang) * 22, runeY + Math.sin(ang) * 22);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(runeX, runeY, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // Radiant Solar Sunburst
+      ctx.beginPath();
+      ctx.arc(runeX, runeY, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      for (let ray = 0; ray < 8; ray++) {
+        const ang = (ray * Math.PI) / 4;
+        ctx.beginPath();
+        ctx.moveTo(runeX + Math.cos(ang) * 13, runeY + Math.sin(ang) * 13);
+        ctx.lineTo(runeX + Math.cos(ang) * 22, runeY + Math.sin(ang) * 22);
+        ctx.stroke();
+      }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * 11. Stella's Astrological Magic Circle Texture (Per Skin)
+   */
+  public static createMagicCircleTexture(
+    circleType: 'nebula' | 'zodiac' | 'chronos',
+    primaryHex: string,
+    secondaryHex: string
+  ): THREE.CanvasTexture {
+    const key = `magic_circle_${circleType}_${primaryHex}_${secondaryHex}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = this.get2DContext(canvas);
+
+    if (!ctx) {
+      const fallback = new THREE.CanvasTexture(canvas);
+      this.cache.set(key, fallback);
+      return fallback;
+    }
+
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+
+    // Ambient radial glow from center
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.48);
+    glow.addColorStop(0, primaryHex + '33'); // 20% opacity
+    glow.addColorStop(0.7, secondaryHex + '18');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = primaryHex;
+    ctx.lineWidth = 3;
+
+    // Concentric border rings
+    [0.46, 0.42, 0.38, 0.22, 0.12].forEach(rRatio => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * rRatio, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    if (circleType === 'nebula') {
+      // 1. Nebula: Star Nodes & Planetary Rings
+      ctx.strokeStyle = secondaryHex;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        const ang = (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * size * 0.12, cy + Math.sin(ang) * size * 0.12);
+        ctx.lineTo(cx + Math.cos(ang) * size * 0.42, cy + Math.sin(ang) * size * 0.42);
+        ctx.stroke();
+
+        // Star Nodes on outer ring
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(ang) * size * 0.42, cy + Math.sin(ang) * size * 0.42, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Interlocking triangles (Hexagram)
+      for (let rot = 0; rot < 2; rot++) {
+        const offset = rot * (Math.PI / 3);
+        ctx.beginPath();
+        for (let p = 0; p < 3; p++) {
+          const a = offset + (p * 2 * Math.PI) / 3;
+          const px = cx + Math.cos(a) * size * 0.36;
+          const py = cy + Math.sin(a) * size * 0.36;
+          if (p === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    } else if (circleType === 'zodiac') {
+      // 2. Zodiac: 12 Astrological Radial Segments & Sigils
+      ctx.strokeStyle = secondaryHex;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 12; i++) {
+        const ang = (i * Math.PI) / 6;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * size * 0.22, cy + Math.sin(ang) * size * 0.22);
+        ctx.lineTo(cx + Math.cos(ang) * size * 0.46, cy + Math.sin(ang) * size * 0.46);
+        ctx.stroke();
+
+        // Glyphs in 12 sectors
+        const midA = ang + Math.PI / 12;
+        const gx = cx + Math.cos(midA) * size * 0.40;
+        const gy = cy + Math.sin(midA) * size * 0.40;
+        ctx.fillStyle = primaryHex;
+        ctx.beginPath();
+        ctx.arc(gx, gy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Central 12-point astral star
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 12; i++) {
+        const a1 = (i * Math.PI) / 6;
+        const a2 = ((i + 4) * Math.PI) / 6;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a1) * size * 0.20, cy + Math.sin(a1) * size * 0.20);
+        ctx.lineTo(cx + Math.cos(a2) * size * 0.20, cy + Math.sin(a2) * size * 0.20);
+        ctx.stroke();
+      }
+    } else {
+      // 3. Chronos: Ticking Roman Clock Face & Gear Teeth Ring
+      // Gear Teeth on outer boundary
+      const teeth = 36;
+      ctx.fillStyle = primaryHex;
+      for (let t = 0; t < teeth; t++) {
+        const ang = (t * Math.PI * 2) / teeth;
+        const tx = cx + Math.cos(ang) * size * 0.46;
+        const ty = cy + Math.sin(ang) * size * 0.46;
+        ctx.fillRect(tx - 3, ty - 3, 6, 6);
+      }
+
+      // 12 Clock Hour Marks (Roman Numeral ticks)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      for (let h = 0; h < 12; h++) {
+        const ang = (h * Math.PI * 2) / 12 - Math.PI / 2;
+        const inner = size * (h % 3 === 0 ? 0.35 : 0.38);
+        const outer = size * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * inner, cy + Math.sin(ang) * inner);
+        ctx.lineTo(cx + Math.cos(ang) * outer, cy + Math.sin(ang) * outer);
+        ctx.stroke();
+      }
+
+      // Central Clock Hands
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = primaryHex;
+      // Minute Hand (pointing at 2 o'clock)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(-Math.PI / 6) * size * 0.26, cy + Math.sin(-Math.PI / 6) * size * 0.26);
+      ctx.stroke();
+
+      // Hour Hand (pointing at 10 o'clock)
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = secondaryHex;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(-Math.PI * 5 / 6) * size * 0.17, cy + Math.sin(-Math.PI * 5 / 6) * size * 0.17);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * 12. Solaris's Vanguard Aura Shield Texture (Per Skin)
+   */
+  public static createAuraShieldTexture(
+    auraType: 'sunfire' | 'magma' | 'phoenix',
+    primaryHex: string,
+    secondaryHex: string
+  ): THREE.CanvasTexture {
+    const key = `aura_shield_${auraType}_${primaryHex}_${secondaryHex}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = this.get2DContext(canvas);
+
+    if (!ctx) {
+      const fallback = new THREE.CanvasTexture(canvas);
+      this.cache.set(key, fallback);
+      return fallback;
+    }
+
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+
+    // Glowing energy envelope
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.45);
+    grad.addColorStop(0, primaryHex + '88');
+    grad.addColorStop(0.65, secondaryHex + '44');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = primaryHex;
+    ctx.lineWidth = 4;
+
+    if (auraType === 'sunfire') {
+      // Holy Solar Lion Crest & Sunburst
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.32, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let i = 0; i < 16; i++) {
+        const ang = (i * Math.PI) / 8;
+        const r1 = size * 0.32;
+        const r2 = size * (i % 2 === 0 ? 0.44 : 0.38);
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
+        ctx.lineTo(cx + Math.cos(ang) * r2, cy + Math.sin(ang) * r2);
+        ctx.stroke();
+      }
+    } else if (auraType === 'magma') {
+      // Obsidian Cracking Volcanic Magma Fissures
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 5;
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4;
+        let curX = cx + Math.cos(ang) * 20;
+        let curY = cy + Math.sin(ang) * 20;
+        ctx.beginPath();
+        ctx.moveTo(curX, curY);
+        for (let seg = 1; seg <= 5; seg++) {
+          const r = seg * size * 0.08;
+          const a = ang + (Math.sin(seg * 3 + i) * 0.3);
+          curX = cx + Math.cos(a) * r;
+          curY = cy + Math.sin(a) * r;
+          ctx.lineTo(curX, curY);
+        }
+        ctx.stroke();
+      }
+    } else {
+      // Phoenix Vermilion Fire Wings
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 3;
+      for (let wing = 0; wing < 2; wing++) {
+        const side = wing === 0 ? 1 : -1;
+        for (let feather = 0; feather < 6; feather++) {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          const cpX = cx + side * (feather * 30 + 40);
+          const cpY = cy - feather * 25 - 20;
+          const endX = cx + side * (feather * 40 + 60);
+          const endY = cy - feather * 10;
+          ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+          ctx.stroke();
+        }
+      }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * 13. Nyx's Shadow Shift Spatial Rift Texture (Per Skin)
+   */
+  public static createShadowRiftTexture(
+    riftType: 'phantom' | 'cyber' | 'bloodmoon',
+    primaryHex: string,
+    secondaryHex: string
+  ): THREE.CanvasTexture {
+    const key = `shadow_rift_${riftType}_${primaryHex}_${secondaryHex}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = this.get2DContext(canvas);
+
+    if (!ctx) {
+      const fallback = new THREE.CanvasTexture(canvas);
+      this.cache.set(key, fallback);
+      return fallback;
+    }
+
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+
+    if (riftType === 'phantom') {
+      // 1. Phantom: Void Spiral Vortex
+      const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.45);
+      radGrad.addColorStop(0, '#000000');
+      radGrad.addColorStop(0.65, primaryHex + '55');
+      radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = radGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spiral Arms
+      ctx.strokeStyle = primaryHex;
+      ctx.lineWidth = 3;
+      for (let arm = 0; arm < 3; arm++) {
+        const offset = (arm * Math.PI * 2) / 3;
+        ctx.beginPath();
+        for (let theta = 0; theta < Math.PI * 3; theta += 0.1) {
+          const r = theta * 22;
+          const x = cx + Math.cos(theta + offset) * r;
+          const y = cy + Math.sin(theta + offset) * r;
+          if (theta === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    } else if (riftType === 'cyber') {
+      // 2. Cyber: Holographic Radar Grid & Digital Binary Reticle
+      ctx.strokeStyle = primaryHex;
+      ctx.lineWidth = 2;
+
+      // Radar Concentric Circles
+      [0.45, 0.35, 0.25, 0.15].forEach(rRatio => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * rRatio, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Crosshairs & Grid Lines
+      ctx.beginPath();
+      ctx.moveTo(cx - size * 0.45, cy);
+      ctx.lineTo(cx + size * 0.45, cy);
+      ctx.moveTo(cx, cy - size * 0.45);
+      ctx.lineTo(cx, cy + size * 0.45);
+      ctx.stroke();
+
+      // Digital Matrix Nodes
+      ctx.fillStyle = secondaryHex;
+      for (let nx = -3; nx <= 3; nx++) {
+        for (let ny = -3; ny <= 3; ny++) {
+          if (nx * nx + ny * ny < 14) {
+            ctx.fillRect(cx + nx * 45 - 2, cy + ny * 45 - 2, 4, 4);
+          }
+        }
+      }
+    } else {
+      // 3. Bloodmoon: Eclipse Crescent & Occult Bleeding Runes
+      const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.45);
+      radGrad.addColorStop(0, '#1a0003');
+      radGrad.addColorStop(0.5, '#7f1d1d88');
+      radGrad.addColorStop(0.9, primaryHex + '55');
+      radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = radGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Blood Eclipse Ring
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.38, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Blood Drops radiating outward
+      ctx.fillStyle = '#ef4444';
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4;
+        const bx = cx + Math.cos(ang) * size * 0.41;
+        const by = cy + Math.sin(ang) * size * 0.41;
+        ctx.beginPath();
+        ctx.arc(bx, by, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    this.cache.set(key, tex);
+    return tex;
+  }
 }

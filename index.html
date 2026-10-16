@@ -18,61 +18,108 @@
       <!-- 1. Main Menu Screen -->
       <div id="main-menu" class="screen-view active">
         <div class="menu-top-bar">
-          <div class="currency-badge">
-            <span class="shard-icon">🌙</span>
-            <span id="menu-coin-count">0</span>
+          <button id="btn-open-settings" class="btn-top-settings" aria-label="환경 설정" title="환경 설정">
+            <span class="settings-gear-icon">⚙️</span>
+          </button>
+          <div class="currency-group">
+            <span id="menu-vip-badge" class="vip-member-badge hidden">👑 VIP</span>
+            <div class="currency-badge">
+              <span class="shard-icon">🌙</span>
+              <span id="menu-coin-count">0</span>
+            </div>
+            <div class="currency-badge chest-badge clickable-badge" id="btn-menu-open-chest" title="보물상자 확인 및 개봉">
+              <span class="chest-icon">📦</span>
+              <span id="menu-chest-count">0</span>
+            </div>
           </div>
         </div>
         <div class="title-container">
           <div class="title-sub">ANCIENT CELESTIAL ODYSSEY</div>
           <h1 class="game-logo">MOONFALL<span>RUN</span></h1>
-          <p class="title-desc">달빛의 소녀 루나와 함께하는 3D 무한 질주</p>
+          <p class="title-desc">달빛과 별빛의 영웅들과 함께하는 3D 무한 질주</p>
         </div>
         <div class="menu-actions">
           <button id="btn-start-run" class="btn btn-primary pulse">
             <span class="btn-glow"></span>
             달리기 시작
           </button>
-          <div class="menu-sub-actions menu-three-cols">
-            <button id="btn-open-costumes" class="btn btn-secondary">
-              <span>👗 캐릭터</span>
+          <div class="menu-sub-actions menu-four-cols">
+            <button id="btn-open-costumes" class="btn btn-secondary menu-card-btn">
+              <img src="/assets/icon_costume.png" alt="캐릭터" class="menu-btn-icon" />
+              <span>캐릭터</span>
             </button>
-            <button id="btn-open-shop" class="btn btn-secondary">
-              <span>🔮 성장</span>
+            <button id="btn-open-growth" class="btn btn-secondary menu-card-btn">
+              <img src="/assets/icon_growth.png" alt="성장" class="menu-btn-icon" />
+              <span>성장</span>
             </button>
-            <button id="btn-open-settings" class="btn btn-secondary">
-              <span>⚙️ 설정</span>
+            <button id="btn-open-shop" class="btn btn-secondary menu-card-btn">
+              <img src="/assets/icon_chest.png" alt="상점" class="menu-btn-icon" />
+              <span>상점</span>
+            </button>
+            <button id="btn-open-gacha" class="btn btn-secondary menu-card-btn">
+              <img src="/assets/icon_gacha.png" alt="소환" class="menu-btn-icon" />
+              <span>별빛 소환</span>
             </button>
           </div>
         </div>
         <div class="controls-guide">
-          <span>스와이프 / 방향키 (A·D: 이동, W: 점프, S: 슬라이딩)</span>
+          <span>A·D: 이동 · W: 점프 · S: 슬라이드 · E: 스킬</span>
         </div>
       </div>
 
       <!-- 2. Gameplay In-Game HUD -->
       <div id="game-hud" class="screen-view">
         <div class="hud-top">
-          <div class="hud-stat hud-score">
-            <span class="hud-label">SCORE</span>
-            <span id="hud-score-val" class="hud-value">0</span>
-          </div>
-          <div class="hud-center">
+          <div class="hud-stats-cluster">
+            <div class="hud-stat hud-score">
+              <span class="hud-label">SCORE</span>
+              <span id="hud-score-val" class="hud-value">0</span>
+            </div>
+            <div class="hud-stats-divider"></div>
             <div class="hud-stat hud-distance">
-              <span id="hud-dist-val" class="hud-value">0</span>
-              <span class="hud-unit">m</span>
+              <span class="hud-label">DIST</span>
+              <div class="hud-dist-row">
+                <span id="hud-dist-val" class="hud-value">0</span>
+                <span class="hud-unit">m</span>
+              </div>
             </div>
           </div>
           <div class="hud-right">
-            <div class="currency-badge hud-currency">
-              <span class="shard-icon">🌙</span>
-              <span id="hud-coin-val">0</span>
+            <div class="currency-group">
+              <div class="currency-badge hud-currency">
+                <span class="shard-icon">🌙</span>
+                <span id="hud-coin-val">0</span>
+              </div>
+              <div class="currency-badge hud-currency chest-badge">
+                <span class="chest-icon">📦</span>
+                <span id="hud-chest-val">0</span>
+              </div>
             </div>
             <button id="btn-pause" class="btn-icon" aria-label="일시정지">
               <span>⏸</span>
             </button>
           </div>
         </div>
+
+        <!-- Starlight Fever Mode Progress -->
+        <div id="hud-fever-wrap" class="hud-fever-wrap">
+          <div class="fever-label-row">
+            <span id="hud-fever-title" class="fever-title">FEVER</span>
+            <span id="hud-fever-pct" class="fever-pct">0%</span>
+          </div>
+          <div class="fever-bar-bg">
+            <div id="hud-fever-fill" class="fever-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- Combo & Stage Indicators -->
+        <div id="hud-combo-badge" class="hud-combo-badge hidden">
+          <span id="hud-combo-text" class="combo-text">PERFECT DODGE!</span>
+        </div>
+        <div id="hud-stage-banner" class="hud-stage-banner hidden">
+          STAGE 1: 달빛 유적지
+        </div>
+
         <!-- Active Buffs & Powerups Indicators -->
         <div id="hud-buffs" class="hud-buffs-container">
           <div id="buff-shield" class="buff-item hidden">
@@ -86,16 +133,31 @@
             </div>
           </div>
         </div>
+
+        <!-- Bottom Touch Action Bar with Skill Button -->
+        <div class="hud-bottom-bar">
+          <div id="hud-skill-container" class="hud-skill-container">
+            <button id="btn-touch-skill" class="btn-touch-skill" aria-label="액티브 스킬">
+              <img id="hud-skill-icon" src="/assets/skill_luna.png" alt="스킬" class="skill-icon-img" />
+              <div id="hud-skill-cooldown-overlay" class="skill-cooldown-overlay hidden">
+                <span id="hud-skill-cooldown-sec">0</span>
+              </div>
+            </button>
+            <div id="hud-skill-label" class="hud-skill-label">스킬 [E]</div>
+          </div>
+        </div>
       </div>
 
       <!-- 3. Pause Modal -->
       <div id="pause-modal" class="modal-overlay hidden">
         <div class="modal-card">
+          <button class="btn-modal-close-corner" id="btn-close-pause-corner" aria-label="닫기">✕</button>
           <h2 class="modal-title">일시 정지</h2>
           <div class="pause-stats">
             <div>현재 거리: <strong id="pause-dist">0m</strong></div>
             <div>현재 점수: <strong id="pause-score">0</strong></div>
             <div>획득 파편: <strong id="pause-coins">0</strong></div>
+            <div>획득 상자: <strong id="pause-chests">0</strong></div>
           </div>
           <div class="modal-buttons">
             <button id="btn-resume" class="btn btn-primary">계속하기</button>
@@ -105,9 +167,68 @@
         </div>
       </div>
 
+      <!-- 3-B. Revive Continue Modal (Watch Ad to Continue - Once per run) -->
+      <div id="revive-modal" class="modal-overlay hidden">
+        <div class="modal-card revive-card">
+          <div class="revive-badge">🎬 판당 1회 한정 기회</div>
+          <h2 class="modal-title text-gold">다시 일어설 기회!</h2>
+          <p class="revive-subtitle">광고를 시청하고 <strong>죽은 자리에서 즉시 이어서</strong> 달리세요!</p>
+
+          <div class="revive-stats-box">
+            <div class="revive-stat">
+              <span class="lbl">현재 거리</span>
+              <strong id="revive-dist">0 m</strong>
+            </div>
+            <div class="revive-stat">
+              <span class="lbl">현재 점수</span>
+              <strong id="revive-score">0</strong>
+            </div>
+          </div>
+
+          <div class="revive-timer-wrapper">
+            <div class="revive-timer-bar-bg">
+              <div id="revive-timer-bar" class="revive-timer-bar"></div>
+            </div>
+            <span id="revive-timer-text" class="revive-timer-text">5초 후 자동 종료</span>
+          </div>
+
+          <div class="modal-buttons revive-buttons">
+            <button id="btn-watch-ad-revive" class="btn btn-gold pulse">
+              <span class="ad-btn-icon">🎬</span> 광고 보고 죽은 자리에서 이어하기
+            </button>
+            <button id="btn-skip-revive" class="btn btn-secondary">
+              포기하고 결과 보기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-C. Rewarded Video Ad Simulation Modal -->
+      <div id="ad-player-modal" class="modal-overlay hidden">
+        <div class="modal-card ad-player-card">
+          <div class="ad-top-bar">
+            <span class="ad-tag">SPONSORED AD</span>
+            <span id="ad-countdown-badge" class="ad-countdown-badge">광고 시청 중... 3초</span>
+          </div>
+          <div class="ad-video-screen">
+            <div class="ad-badge-promo">HOT GAME</div>
+            <div class="ad-game-logo">🌟 MOONFALL: ODYSSEY</div>
+            <div class="ad-game-tagline">차원의 틈새를 질주하는 하이퍼 판타지 러너!</div>
+            <div class="ad-game-char-preview">⚔️ 신규 영웅 & 전설 의상 출시! 지금 사전예약!</div>
+            <div class="ad-progress-bar-bg">
+              <div id="ad-progress-fill" class="ad-progress-fill"></div>
+            </div>
+          </div>
+          <div class="ad-bottom-bar">
+            <button id="btn-claim-ad-reward" class="btn btn-gold pulse hidden">🎉 시청 완료! 부활하여 이어하기</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 4. Game Over Modal -->
       <div id="gameover-modal" class="modal-overlay hidden">
         <div class="modal-card gameover-card">
+          <button class="btn-modal-close-corner" id="btn-close-gameover-corner" aria-label="닫기">✕</button>
           <div id="new-record-badge" class="badge-new-record hidden">NEW RECORD!</div>
           <h2 class="modal-title text-red">여정의 끝</h2>
           <div class="gameover-stats">
@@ -123,6 +244,10 @@
               <span>수집한 달의 파편</span>
               <strong id="go-coins">0</strong>
             </div>
+            <div class="stat-row">
+              <span>수집한 보물상자</span>
+              <strong id="go-chests">0 개</strong>
+            </div>
             <div class="divider"></div>
             <div class="stat-row text-muted">
               <span>최고 기록</span>
@@ -134,54 +259,69 @@
             </div>
           </div>
           <div class="modal-buttons">
+            <button id="btn-ad-revive-go" class="btn btn-gold pulse hidden">🎬 광고 보고 죽은 자리에서 이어하기 (판당 1회)</button>
+            <button id="btn-open-chests-go" class="btn btn-gold pulse hidden">📦 보물상자 개봉 (0개)</button>
             <button id="btn-restart-go" class="btn btn-primary pulse">다시 달리기</button>
             <button id="btn-main-go" class="btn btn-secondary">메인 화면으로</button>
           </div>
         </div>
       </div>
 
-      <!-- 5. Costumes & Character Modal -->
+      <!-- 5. Costumes & Character Modal (Reorganized 2-Tier Selector) -->
       <div id="costume-modal" class="modal-overlay hidden">
         <div class="modal-card costume-card">
+          <button class="btn-modal-close-corner" id="btn-close-costumes-corner" aria-label="닫기">✕</button>
           <div class="modal-header">
-            <h2 class="modal-title">루나의 서재 (코스튬)</h2>
+            <h2 class="modal-title">영웅 & 의상실</h2>
             <div class="currency-badge">
               <span class="shard-icon">🌙</span>
               <span id="costume-coin-count">0</span>
             </div>
           </div>
-          <div class="costume-list" id="costume-list">
-            <!-- Dynamically populated by UIManager -->
+
+          <!-- Top: Compact Hero Selector Bar (4 Heroes) -->
+          <div class="hero-selector-bar" id="hero-selector-bar">
+            <!-- Dynamically populated hero tabs -->
           </div>
+
+          <!-- Hero Details & Equip Banner -->
+          <div id="hero-detail-banner" class="hero-detail-banner">
+            <!-- Dynamically populated hero overview -->
+          </div>
+
+          <!-- Hero's Specific Costumes Grid -->
+          <div class="costume-section-header">
+            <span class="costume-section-title">👗 전용 의상 컬렉션</span>
+          </div>
+          <div id="costume-list" class="costume-grid">
+            <!-- Dynamically populated with 3 costumes for the selected hero -->
+          </div>
+
           <div class="modal-footer">
             <button id="btn-close-costumes" class="btn btn-secondary">닫기</button>
           </div>
         </div>
       </div>
 
-      <!-- 6. Shop & Growth Modal -->
-      <div id="shop-modal" class="modal-overlay hidden">
-        <div class="modal-card shop-card">
+      <!-- 6. Permanent Growth Modal (성장 업그레이드) -->
+      <div id="growth-modal" class="modal-overlay hidden">
+        <div class="modal-card growth-card">
+          <button class="btn-modal-close-corner" id="btn-close-growth-corner" aria-label="닫기">✕</button>
           <div class="modal-header">
-            <h2 class="modal-title">달의 신전 (성장 & 상점)</h2>
+            <h2 class="modal-title">달의 제단 (성장)</h2>
             <div class="currency-badge">
               <span class="shard-icon">🌙</span>
-              <span id="shop-coin-count">0</span>
+              <span id="growth-coin-count">0</span>
             </div>
           </div>
-          <div class="shop-tabs">
-            <button id="tab-upgrades" class="shop-tab active">성장 업그레이드</button>
-            <button id="tab-rewards" class="shop-tab">무료 보상 & 팩</button>
-          </div>
 
-          <!-- Tab Content 1: Upgrades -->
-          <div id="shop-content-upgrades" class="shop-tab-content active">
+          <div id="growth-items-list" class="growth-items-list">
             <!-- Magnet Upgrade -->
             <div class="upgrade-item" id="item-magnet">
               <div class="item-icon-box">🧲</div>
               <div class="item-info">
                 <div class="item-title">코인 자석 <span class="item-lvl" id="lvl-magnet">Lv.1</span></div>
-                <div class="item-desc">주변 달의 파편을 강하게 끌어당깁니다. (지속시간 및 반경 증가)</div>
+                <div class="item-desc">주변 달의 파편을 강력하게 자력 흡수합니다.</div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar" id="bar-magnet" style="width: 20%;"></div>
                 </div>
@@ -197,7 +337,7 @@
               <div class="item-icon-box">🛡️</div>
               <div class="item-info">
                 <div class="item-title">달빛 보호막 <span class="item-lvl" id="lvl-shield">Lv.1</span></div>
-                <div class="item-desc">장애물 충돌을 1회 방어합니다. (레벨업 시 쿨다운 재생성)</div>
+                <div class="item-desc">장애물 충돌을 1회 완벽 방어합니다.</div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar" id="bar-shield" style="width: 20%;"></div>
                 </div>
@@ -213,7 +353,7 @@
               <div class="item-icon-box">⚡</div>
               <div class="item-info">
                 <div class="item-title">시작 보너스 <span class="item-lvl" id="lvl-headstart">Lv.1</span></div>
-                <div class="item-desc">시작 시 즉시 추가 거리 부스트와 보너스 코인을 획득합니다.</div>
+                <div class="item-desc">초반 거리 부스트와 보너스 코인을 획득합니다.</div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar" id="bar-headstart" style="width: 20%;"></div>
                 </div>
@@ -223,25 +363,137 @@
                 <span id="cost-headstart">100</span>
               </button>
             </div>
+
+            <!-- Coin Bonus Upgrade -->
+            <div class="upgrade-item" id="item-coinbonus">
+              <div class="item-icon-box">💎</div>
+              <div class="item-info">
+                <div class="item-title">파편 연금술 <span class="item-lvl" id="lvl-coinbonus">Lv.1</span></div>
+                <div class="item-desc">달의 파편 수집 가치 배율이 증가합니다.</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-coinbonus" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-coinbonus">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-coinbonus">120</span>
+              </button>
+            </div>
+
+            <!-- Fever Boost Upgrade -->
+            <div class="upgrade-item" id="item-feverboost">
+              <div class="item-icon-box">🔥</div>
+              <div class="item-info">
+                <div class="item-title">피버 폭주 <span class="item-lvl" id="lvl-feverboost">Lv.1</span></div>
+                <div class="item-desc">피버 모드 지속시간과 점수 배율이 증가합니다.</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-feverboost" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-feverboost">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-feverboost">150</span>
+              </button>
+            </div>
+
+            <!-- Revive Upgrade -->
+            <div class="upgrade-item" id="item-revive">
+              <div class="item-icon-box">🌟</div>
+              <div class="item-info">
+                <div class="item-title">달빛 부활 <span class="item-lvl" id="lvl-revive">Lv.1</span></div>
+                <div class="item-desc">충돌 시 1회 즉시 무적으로 부활합니다.</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-revive" style="width: 20%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-revive">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-revive">250</span>
+              </button>
+            </div>
+
+            <!-- Skill Mastery Upgrade -->
+            <div class="upgrade-item" id="item-skillmastery">
+              <div class="item-icon-box">⚡</div>
+              <div class="item-info">
+                <div class="item-title">스킬 숙련 <span class="item-lvl" id="lvl-skillmastery">Lv.1</span></div>
+                <div class="item-desc">영웅 고유 스킬의 쿨다운을 단축합니다.</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-skillmastery" style="width: 5%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-skillmastery">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-skillmastery">200</span>
+              </button>
+            </div>
+
+            <!-- Lucky Chest Upgrade -->
+            <div class="upgrade-item" id="item-luckychest">
+              <div class="item-icon-box">📦</div>
+              <div class="item-info">
+                <div class="item-title">황금 행운 상자 <span class="item-lvl" id="lvl-luckychest">Lv.1</span></div>
+                <div class="item-desc">필드 달리기 중 신비한 보물상자의 출현 빈도가 대폭 증가합니다. (최대 3.0배)</div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" id="bar-luckychest" style="width: 5%;"></div>
+                </div>
+              </div>
+              <button class="btn-buy" id="btn-buy-luckychest">
+                <span class="shard-icon">🌙</span>
+                <span id="cost-luckychest">180</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Tab Content 2: Rewards & Mock IAP -->
-          <div id="shop-content-rewards" class="shop-tab-content">
-            <div class="reward-box">
-              <div class="reward-icon">🎁</div>
-              <div class="reward-info">
-                <div class="reward-title">보상형 마법 축복 (광고) <span class="badge-tag">준비 중</span></div>
-                <div class="reward-desc">Google Play 스토어 출시 후 광고 시청 보상이 활성화됩니다.</div>
+          <div class="modal-footer">
+            <button id="btn-close-growth" class="btn btn-secondary">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Moonlight Shop Modal (달빛 상점 & 프리미엄 캐시 샵) -->
+      <div id="shop-modal" class="modal-overlay hidden">
+        <div class="modal-card shop-card">
+          <button class="btn-modal-close-corner" id="btn-close-shop-corner" aria-label="닫기">✕</button>
+          <div class="modal-header">
+            <h2 class="modal-title">상점 (SHOP)</h2>
+            <div class="currency-group">
+              <span id="shop-vip-badge" class="vip-member-badge hidden">👑 VIP</span>
+              <div class="currency-badge">
+                <span class="shard-icon">🌙</span>
+                <span id="shop-coin-count">0</span>
               </div>
-              <button id="btn-watch-ad" class="btn btn-secondary" disabled>준비 중</button>
             </div>
-            <div class="reward-box">
-              <div class="reward-icon">✨</div>
-              <div class="reward-info">
-                <div class="reward-title">루나 스타터 팩 (인앱 상품) <span class="badge-tag">출시 예정</span></div>
-                <div class="reward-desc">달의 파편 1,000개와 수호자의 축복 패키지입니다.</div>
+          </div>
+
+          <!-- Shop Tabs: Shards Shop vs Cash Shop -->
+          <div class="shop-tabs-nav">
+            <button id="tab-btn-item-shop" class="shop-tab-btn active">
+              <span class="tab-icon">🌙</span> 달빛 소모품 상점
+            </button>
+            <button id="tab-btn-cash-shop" class="shop-tab-btn">
+              <span class="tab-icon">💎</span> 프리미엄 캐시 상점 (현질)
+            </button>
+          </div>
+
+          <!-- Consumable Shard Shop Container -->
+          <div id="item-shop-tab-pane" class="shop-tab-pane">
+            <div id="shop-items-container" class="shop-items-grid">
+              <!-- Dynamically populated with SHOP_ITEMS -->
+            </div>
+          </div>
+
+          <!-- Cash Shop Container -->
+          <div id="cash-shop-tab-pane" class="shop-tab-pane hidden">
+            <div class="cash-shop-banner">
+              <span class="banner-crown">👑</span>
+              <div class="banner-text">
+                <div class="banner-title">프리미엄 혜택 & 특가 패키지</div>
+                <div class="banner-sub">한정 할인 스타터 팩부터 무제한 VIP 회원권까지 즉시 충전!</div>
               </div>
-              <button id="btn-buy-starter" class="btn btn-secondary" disabled>출시 예정</button>
+            </div>
+            <div id="cash-packages-container" class="cash-packages-grid">
+              <!-- Dynamically populated with CASH_SHOP_PACKAGES -->
             </div>
           </div>
 
@@ -251,9 +503,202 @@
         </div>
       </div>
 
-      <!-- 7. Settings Modal -->
+      <!-- Cash Purchase Billing Modal (Google Play / App Store simulation) -->
+      <div id="cash-billing-modal" class="modal-overlay hidden">
+        <div class="modal-card billing-card">
+          <div class="billing-header">
+            <div class="billing-store-badge">
+              <span class="play-store-icon">⚡</span> Google Play 결제
+            </div>
+            <button class="btn-modal-close-corner" id="btn-close-billing-corner" aria-label="닫기">✕</button>
+          </div>
+          <div class="billing-body">
+            <div class="billing-pkg-icon" id="billing-pkg-icon">🎁</div>
+            <h3 class="billing-pkg-name" id="billing-pkg-name">스타터 한정 특가 패키지</h3>
+            <p class="billing-pkg-desc" id="billing-pkg-desc">모험의 첫걸음을 위한 파격 혜택!</p>
+            <div class="billing-rewards-list" id="billing-rewards-list">
+              <!-- Reward bullets -->
+            </div>
+            <div class="billing-price-box">
+              <span class="billing-price-label">결제 금액</span>
+              <span class="billing-price-val" id="billing-price-val">₩1,200</span>
+            </div>
+            <div class="billing-payment-method">
+              <span>💳 간편 결제 (원터치 결제 승인)</span>
+            </div>
+          </div>
+          <div class="billing-footer">
+            <button id="btn-cancel-billing" class="btn btn-secondary">취소</button>
+            <button id="btn-confirm-billing" class="btn btn-primary btn-billing-confirm">
+              <span class="lock-icon">🔒</span> 결제 승인하기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character Skill Detail Modal (영웅 고유 스킬 설명 팝업) -->
+      <div id="skill-detail-modal" class="modal-overlay hidden">
+        <div class="modal-card skill-detail-card">
+          <button class="btn-modal-close-corner" id="btn-close-skill-corner" aria-label="닫기">✕</button>
+          <div class="modal-header">
+            <h2 class="modal-title">⚡ 영웅 고유 스킬 도감</h2>
+          </div>
+
+          <!-- Hero Selection Tabs inside Skill Modal -->
+          <div class="skill-hero-tabs" id="skill-hero-tabs">
+            <button class="skill-tab-btn active" data-char="luna">🌙 루나</button>
+            <button class="skill-tab-btn" data-char="solaris">☀️ 솔라리스</button>
+            <button class="skill-tab-btn" data-char="nyx">👤 닉스</button>
+            <button class="skill-tab-btn" data-char="stella">✨ 스텔라</button>
+          </div>
+
+          <!-- Skill Card Content Container -->
+          <div class="skill-detail-content" id="skill-detail-content">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="modal-footer">
+            <button id="btn-close-skill" class="btn btn-primary">확인</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Starlight Gacha Modal -->
+      <div id="gacha-modal" class="modal-overlay hidden">
+        <div class="modal-card gacha-card">
+          <button class="btn-modal-close-corner" id="btn-close-gacha-corner" aria-label="닫기">✕</button>
+          <div class="modal-header">
+            <h2 class="modal-title">별빛 제단 (소환)</h2>
+            <div class="currency-badge">
+              <span class="shard-icon">🌙</span>
+              <span id="gacha-coin-count">0</span>
+            </div>
+          </div>
+          <div class="gacha-banner">
+            <img src="/assets/icon_gacha.png" alt="별빛 소환" class="gacha-banner-icon" />
+            <div class="gacha-banner-text">
+              <div class="gacha-banner-title">신비로운 별빛 소환</div>
+              <div class="gacha-banner-sub">영웅 해금, 비급서 및 달의 파편을 소환하세요!</div>
+            </div>
+          </div>
+
+          <!-- Probability Info Toggle & Box -->
+          <div class="rates-toggle-row">
+            <button id="btn-toggle-gacha-rates" class="btn btn-rates-toggle">📊 소환 확률 정보 보기</button>
+          </div>
+          <div id="gacha-rates-table" class="rates-card hidden">
+            <div class="rates-title">✨ 별빛 제단 정밀 소환 확률표</div>
+            <div class="rates-row rate-row-ssr">
+              <span class="rate-badge badge-ssr">SSR (8.0%)</span>
+              <span class="rate-desc">신규 영웅 해금 (스텔라/솔라리스/닉스)</span>
+            </div>
+            <div class="rates-row rate-row-sr">
+              <span class="rate-badge badge-sr">SR (27.0%)</span>
+              <span class="rate-desc">영웅 고유 비급서 (스킬 Lv+1 & 보너스 파편)</span>
+            </div>
+            <div class="rates-row rate-row-r">
+              <span class="rate-badge badge-r">R (65.0%)</span>
+              <span class="rate-desc">달빛 원석 조각 (달의 파편 +15 ~ 35개)</span>
+            </div>
+          </div>
+
+          <!-- Summon result card grid (shown after summoning) -->
+          <div id="gacha-results-container" class="gacha-results-container hidden">
+            <div class="gacha-results-title">✨ 소환 결과</div>
+            <div id="gacha-results-grid" class="gacha-results-grid"></div>
+          </div>
+
+          <div class="gacha-actions">
+            <button id="btn-gacha-single" class="btn btn-primary gacha-pull-btn">
+              <span>1회 소환</span>
+              <div class="gacha-cost">
+                <span class="shard-icon">🌙</span> 500
+              </div>
+            </button>
+            <button id="btn-gacha-multi" class="btn btn-gold gacha-pull-btn pulse">
+              <span>10회 연속 소환</span>
+              <div class="gacha-cost">
+                <span class="shard-icon">🌙</span> 4,500 <span class="badge-tag">-10%</span>
+              </div>
+            </button>
+          </div>
+          <div class="modal-footer">
+            <button id="btn-close-gacha" class="btn btn-secondary">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. Gacha Summon Animation Overlay & Skip -->
+      <div id="gacha-summon-modal" class="modal-overlay hidden">
+        <div id="gacha-summon-stage" class="gacha-summon-stage portal-grade-r">
+          <button id="btn-skip-gacha" class="btn btn-skip-gacha">⏭️ 스킵</button>
+          <div id="gacha-portal-rarity-badge" class="gacha-portal-rarity-badge">RARE</div>
+          <div class="gacha-portal-wrap">
+            <div class="gacha-portal-beam"></div>
+            <div class="gacha-portal-ring ring-outer"></div>
+            <div class="gacha-portal-ring ring-inner"></div>
+            <div class="gacha-portal-core"></div>
+            <div class="gacha-portal-stars"></div>
+          </div>
+          <div id="gacha-portal-title" class="gacha-portal-title">별빛 제단의 문이 열립니다...</div>
+          <div id="gacha-portal-sub" class="gacha-portal-sub">천체의 궤도가 정렬되어 고대 영웅과 비급이 현현합니다!</div>
+        </div>
+      </div>
+
+      <!-- 10. Mystery Chest Animated Opening Modal -->
+      <div id="chest-open-modal" class="modal-overlay hidden">
+        <div class="modal-card chest-open-card">
+          <button class="btn-modal-close-corner" id="btn-close-chest-corner" aria-label="닫기">✕</button>
+          <div class="modal-header">
+            <h2 class="modal-title">신비한 보물상자</h2>
+            <div class="chest-counter-badge">
+              <span class="chest-icon">📦</span>
+              남은 상자: <strong id="chest-modal-count">0</strong>개
+            </div>
+          </div>
+
+          <!-- Chest Rates Toggle -->
+          <div class="rates-toggle-row">
+            <button id="btn-toggle-chest-rates" class="btn btn-rates-toggle">📊 보물상자 개봉 확률 정보 보기</button>
+          </div>
+          <div id="chest-rates-table" class="rates-card hidden">
+            <div class="rates-title">📦 신비한 보물상자 개봉 확률표</div>
+            <div class="rates-row rate-row-ssr">
+              <span class="rate-badge badge-ssr">대박 보물 (10.00%)</span>
+              <span class="rate-desc">달의 파편 +400 ~ 800개 대량 획득 잭팟!</span>
+            </div>
+            <div class="rates-row rate-row-sr">
+              <span class="rate-badge badge-sr">스킬 비급서 (25.00%)</span>
+              <span class="rate-desc">무작위 영웅 스킬 레벨 +1 즉시 상승</span>
+            </div>
+            <div class="rates-row rate-row-r">
+              <span class="rate-badge badge-r">파편 묶음 (65.00%)</span>
+              <span class="rate-desc">달의 파편 +100 ~ 250개 획득</span>
+            </div>
+          </div>
+
+          <div class="chest-stage-wrap">
+            <div id="chest-anim-box" class="chest-anim-box">
+              <div id="chest-halo-rays" class="chest-halo-rays hidden"></div>
+              <img id="chest-sprite-img" src="/assets/chest_mystery.png" alt="보물상자" class="chest-sprite" />
+            </div>
+            <div id="chest-reward-card" class="chest-reward-card hidden">
+              <div id="chest-reward-icon" class="chest-reward-icon">🌙</div>
+              <div id="chest-reward-title" class="chest-reward-title">보상 획득!</div>
+              <div id="chest-reward-desc" class="chest-reward-desc">달의 파편 +150개</div>
+            </div>
+          </div>
+          <div class="modal-buttons chest-modal-buttons">
+            <button id="btn-chest-open-next" class="btn btn-gold pulse">📦 상자 개봉하기 (남은 상자: 0개)</button>
+            <button id="btn-close-chest-modal" class="btn btn-secondary">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. Settings Modal -->
       <div id="settings-modal" class="modal-overlay hidden">
         <div class="modal-card settings-card">
+          <button class="btn-modal-close-corner" id="btn-close-settings-corner" aria-label="닫기">✕</button>
           <h2 class="modal-title">환경 설정</h2>
           <div class="settings-list">
             <div class="setting-row">
@@ -287,6 +732,10 @@
               </div>
             </div>
             <div class="divider"></div>
+            <div class="setting-row">
+              <span>개인정보 처리방침</span>
+              <a href="/privacy-policy.html" target="_blank" rel="noopener" id="btn-privacy-policy" style="text-decoration:none; display:inline-flex; align-items:center; padding:5px 12px; font-size:12px; border-radius:6px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600;">방침 확인 ↗</a>
+            </div>
             <div class="setting-row">
               <span>설정 초기화</span>
               <button id="btn-reset-settings" class="btn btn-danger-sm">초기화</button>
