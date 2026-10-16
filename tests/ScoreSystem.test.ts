@@ -50,4 +50,19 @@ describe('ScoreSystem', () => {
     expect(storage.getData().highScore).toBe(result.score);
     expect(storage.getData().maxDistance).toBe(200);
   });
+
+  it('should require 50 coins to trigger Starlight Fever Mode (2% per coin)', () => {
+    // Collect 49 coins: gauge should reach 98% and return false
+    for (let i = 1; i <= 49; i++) {
+      const feverReady = scoreSystem.addCoin();
+      expect(feverReady).toBe(false);
+      expect(scoreSystem.feverGauge).toBeCloseTo(i * 2.0, 1);
+    }
+    expect(scoreSystem.feverGauge).toBeCloseTo(98.0, 1);
+
+    // 50th coin triggers fever (100%)
+    const feverReadyOn50th = scoreSystem.addCoin();
+    expect(feverReadyOn50th).toBe(true);
+    expect(scoreSystem.feverGauge).toBe(100);
+  });
 });

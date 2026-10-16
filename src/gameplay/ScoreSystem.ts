@@ -60,9 +60,9 @@ export class ScoreSystem {
     this.sessionCoins += gained;
     this.currentScore += 50 * gained;
 
-    // Build fever gauge if not currently in fever
+    // Build fever gauge if not currently in fever (requires 50 coins to trigger fever mode)
     if (!this.isFever) {
-      this.feverGauge = Math.min(100, this.feverGauge + 6.0);
+      this.feverGauge = Math.min(100, this.feverGauge + 2.0);
       if (this.feverGauge >= 100) {
         return true; // Signal fever activation ready
       }

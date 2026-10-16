@@ -114,6 +114,8 @@ export class UIManager {
     const feverFill = document.getElementById('hud-fever-fill');
     const feverPct = document.getElementById('hud-fever-pct');
     const feverTitle = document.getElementById('hud-fever-title');
+    const feverWrap = document.getElementById('hud-fever-wrap');
+    const feverOverlay = document.getElementById('hud-fever-overlay');
     const comboBadge = document.getElementById('hud-combo-badge');
     const comboText = document.getElementById('hud-combo-text');
     const stageBanner = document.getElementById('hud-stage-banner');
@@ -174,12 +176,26 @@ export class UIManager {
       }
     }
 
-    // Fever Mode Bar
+    // Fever Mode Bar & Screen Edge Glow Effects
     if (feverFill && feverPct) {
       feverFill.style.width = `${Math.min(100, Math.max(0, feverGauge))}%`;
       feverPct.textContent = isFever ? 'MAX' : `${Math.floor(feverGauge)}%`;
       if (feverTitle) {
         feverTitle.textContent = isFever ? '🔥 FEVER' : 'FEVER';
+      }
+    }
+    if (feverOverlay) {
+      if (isFever) {
+        feverOverlay.classList.add('active');
+      } else {
+        feverOverlay.classList.remove('active');
+      }
+    }
+    if (feverWrap) {
+      if (isFever) {
+        feverWrap.classList.add('fever-active');
+      } else {
+        feverWrap.classList.remove('fever-active');
       }
     }
 
@@ -427,6 +443,11 @@ export class UIManager {
         this.hideGameOverModal();
         this.hidePauseModal();
       }
+    }
+
+    if (state !== GameState.RUNNING) {
+      document.getElementById('hud-fever-overlay')?.classList.remove('active');
+      document.getElementById('hud-fever-wrap')?.classList.remove('fever-active');
     }
   }
 

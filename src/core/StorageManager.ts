@@ -275,7 +275,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'revive_feather',
     name: '부활의 불사조 깃털',
     icon: '🌟',
-    description: '치명적 충돌 시 1회 즉시 무적으로 부활합니다.',
+    description: '치명적 장애물 충돌 시 1회 즉시 무적으로 부활합니다. (판당 1회 / 낙사 시 제외)',
     cost: 300,
     category: 'consumable'
   }

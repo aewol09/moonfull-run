@@ -45,6 +45,7 @@ export class GameEngine {
   private isGameOverProcessed = false;
   public sessionChests = 0;
   private usedVipReviveThisRun = false;
+  public usedFeatherReviveThisRun = false;
   public usedAdReviveThisRun = false;
   public isReviveModalShowing = false;
   private lastAddedCoins = 0;
@@ -296,6 +297,7 @@ export class GameEngine {
     this.isGameOverProcessed = false;
     this.sessionChests = 0;
     this.usedVipReviveThisRun = false;
+    this.usedFeatherReviveThisRun = false;
     this.usedAdReviveThisRun = false;
     this.isReviveModalShowing = false;
     this.lastAddedCoins = 0;
@@ -487,16 +489,8 @@ export class GameEngine {
             this.audio.playReviveFanfare();
             this.capacitor.vibrateHeavy();
             this.ui.showToast('👑 [VIP 무료 부활] 심연을 극복하고 날아올랐습니다!');
-          } else if (this.storage.consumeInventoryItem('revive_feather')) {
-            this.luna.posY = 0.5;
-            this.luna.velocityY = 11.0;
-            this.luna.isFallingIntoPit = false;
-            this.luna.state = CharacterState.JUMP;
-            this.luna.setShieldActive(true);
-            this.audio.playReviveFanfare();
-            this.capacitor.vibrateHeavy();
-            this.ui.showToast('🌟 [부활의 불사조 깃털] 심연을 극복하고 부활했습니다!');
           } else {
+            // Note: Phoenix feather cannot be used on fall death (낙사 시 사용 불가)
             this.audio.playGameOver();
             this.capacitor.vibrateHeavy();
             this.luna.hitObstacle(true);
@@ -622,14 +616,15 @@ export class GameEngine {
               this.audio.playReviveFanfare();
               this.capacitor.vibrateHeavy();
               this.ui.showToast('👑 [VIP 무료 부활] 치명상을 극복하고 부활했습니다!');
-            } else if (this.storage.consumeInventoryItem('revive_feather')) {
+            } else if (!this.usedFeatherReviveThisRun && this.storage.consumeInventoryItem('revive_feather')) {
+              this.usedFeatherReviveThisRun = true;
               this.luna.posY = 0.5;
               this.luna.velocityY = 10.0;
               this.luna.state = CharacterState.JUMP;
               this.luna.setShieldActive(true);
               this.audio.playReviveFanfare();
               this.capacitor.vibrateHeavy();
-              this.ui.showToast('🌟 [부활의 불사조 깃털] 치명상을 극복하고 부활했습니다!');
+              this.ui.showToast('🌟 [부활의 불사조 깃털] 치명상을 극복하고 부활했습니다! (판당 1회)');
             } else {
               this.audio.playGameOver();
               this.capacitor.vibrateHeavy();
@@ -658,11 +653,12 @@ export class GameEngine {
             this.audio.playShieldBreak();
             this.capacitor.vibrateHeavy();
             this.ui.showToast('👑 [VIP 무료 부활] 1회 무료 부활로 보호막이 충전되었습니다!');
-          } else if (this.storage.consumeInventoryItem('revive_feather')) {
+          } else if (!this.usedFeatherReviveThisRun && this.storage.consumeInventoryItem('revive_feather')) {
+            this.usedFeatherReviveThisRun = true;
             this.luna.setShieldActive(true);
             this.audio.playShieldBreak();
             this.capacitor.vibrateHeavy();
-            this.ui.showToast('🌟 [부활의 불사조 깃털] 보호막이 충전되어 회생했습니다!');
+            this.ui.showToast('🌟 [부활의 불사조 깃털] 보호막이 충전되어 회생했습니다! (판당 1회)');
           } else {
             this.audio.playHit();
             this.audio.playGameOver();
@@ -692,15 +688,8 @@ export class GameEngine {
           this.audio.playShieldBreak();
           this.capacitor.vibrateHeavy();
           this.ui.showToast('👑 [VIP 무료 부활] 심연에서 날아올랐습니다!');
-        } else if (this.storage.consumeInventoryItem('revive_feather')) {
-          this.luna.posY = 0.5;
-          this.luna.velocityY = 10.0;
-          this.luna.state = CharacterState.JUMP;
-          this.luna.setShieldActive(true);
-          this.audio.playShieldBreak();
-          this.capacitor.vibrateHeavy();
-          this.ui.showToast('🌟 [부활의 불사조 깃털] 심연에서 날아올랐습니다!');
         } else {
+          // Note: Phoenix feather cannot be used on fall death (낙사 시 사용 불가)
           this.audio.playGameOver();
           this.capacitor.vibrateHeavy();
           this.luna.hitObstacle(true);
