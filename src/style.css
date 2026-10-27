@@ -2553,8 +2553,30 @@ input:checked + .slider:before {
   box-shadow: none;
 }
 
+.cash-shop-restore-box {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.btn-restore-purchases {
+  font-size: 0.85rem;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #94a3b8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-restore-purchases:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 /* ====================================================
-   Cash Billing Modal (Simulated Google Play Store Sheet)
+   Cash Billing Modal (Google Play Store Sheet)
    ==================================================== */
 .billing-card {
   max-width: 360px;

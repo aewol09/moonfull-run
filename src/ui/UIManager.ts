@@ -2,6 +2,7 @@ import { GameState, GameStateManager } from '../core/GameState';
 import { StorageManager, UPGRADE_MAX_LEVEL, GraphicsQuality, CHARACTERS, SHOP_ITEMS, CASH_SHOP_PACKAGES, CashShopPackage } from '../core/StorageManager';
 import { AudioManager } from '../core/AudioManager';
 import { COSTUME_PRESETS } from '../entities/LunaCharacter';
+import { BillingService } from '../mobile/BillingService';
 
 export interface UIEventListeners {
   onStartRun: () => void;
@@ -27,6 +28,7 @@ export class UIManager {
   private currentCostumeTabChar = 'luna';
   private activeShopTab: 'cash' | 'items' = 'items';
   private pendingBillingPackage: CashShopPackage | null = null;
+  private billingService: BillingService = BillingService.getInstance();
 
   // Revive & Ad Simulation State
   private reviveCountdownTimer: any = null;
@@ -756,27 +758,52 @@ export class UIManager {
     if (modal) modal.classList.remove('hidden');
   }
 
-  public confirmBillingPurchase(): void {
+  public async confirmBillingPurchase(): Promise<void> {
     if (!this.pendingBillingPackage) return;
     const pkg = this.pendingBillingPackage;
-    this.pendingBillingPackage = null;
 
-    const res = this.storage.buyCashPackage(pkg.id);
-    const modal = document.getElementById('cash-billing-modal');
-    if (modal) modal.classList.add('hidden');
+    const confirmBtn = document.getElementById('btn-confirm-billing') as HTMLButtonElement;
+    const originalBtnHtml = confirmBtn ? confirmBtn.innerHTML : '<span class="lock-icon">🔒</span> 결제 승인하기';
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '⏳ 결제창 요청 중...';
+    }
 
-    if (res.success) {
-      this.audio.playCoin();
-      this.audio.playShieldBreak();
-      if (this.storage.getData().settings.vibration && typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]);
+    try {
+      const result = await this.billingService.purchasePackage(pkg);
+
+      if (result.success) {
+        this.pendingBillingPackage = null;
+        const res = this.storage.buyCashPackage(pkg.id);
+        const modal = document.getElementById('cash-billing-modal');
+        if (modal) modal.classList.add('hidden');
+
+        if (res.success) {
+          this.audio.playCoin();
+          this.audio.playShieldBreak();
+          if (this.storage.getData().settings.vibration && typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([40, 60, 40]);
+          }
+          this.showToast(`💎 [${pkg.name}] 결제 완료! 모든 보상이 즉시 지급되었습니다!`);
+          this.updateShopModal();
+          this.updateWalletDisplays();
+          this.updateCharacterRoster();
+        } else {
+          this.showToast('결제는 완료되었으나 보상 지급에 실패했습니다. 고객센터로 문의해 주세요.');
+        }
+      } else if (result.cancelled) {
+        this.showToast('결제가 취소되었습니다.');
+      } else {
+        this.showToast(result.error || '결제 처리에 실패했습니다.');
       }
-      this.showToast(`💎 [${pkg.name}] 결제 완료! 모든 보상이 즉시 지급되었습니다!`);
-      this.updateShopModal();
-      this.updateWalletDisplays();
-      this.updateCharacterRoster();
-    } else {
-      this.showToast('결제 처리에 실패했습니다.');
+    } catch (err: any) {
+      console.error('[UIManager] 결제 예외 발생:', err);
+      this.showToast('결제 처리 중 예상치 못한 오류가 발생했습니다.');
+    } finally {
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = originalBtnHtml;
+      }
     }
   }
 
@@ -1555,6 +1582,18 @@ export class UIManager {
 
     document.getElementById('btn-confirm-billing')?.addEventListener('click', () => {
       this.confirmBillingPurchase();
+    });
+
+    document.getElementById('btn-restore-purchases')?.addEventListener('click', async () => {
+      this.audio.playClick();
+      this.showToast('Google Play 구매 내역을 확인하는 중입니다...');
+      const res = await this.billingService.restorePurchases(this.storage);
+      this.showToast(res.message);
+      if (res.restoredCount > 0) {
+        this.updateShopModal();
+        this.updateWalletDisplays();
+        this.updateCharacterRoster();
+      }
     });
 
     // Rates Toggle Buttons
